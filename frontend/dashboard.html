@@ -1539,6 +1539,7 @@
         </div>
     </div>
 
+    <script src="js/api-config.js"></script>
     <script>
         // Global variables
         let currentUser = null;
@@ -2330,7 +2331,7 @@
 
         // API call function
         async function apiCall(endpoint, options = {}) {
-            const url = `http://localhost:3001${endpoint}`;
+            const url = `${API_BASE_URL}${endpoint}`;
             const defaultOptions = {
                 headers: {
                     'Content-Type': 'application/json',
