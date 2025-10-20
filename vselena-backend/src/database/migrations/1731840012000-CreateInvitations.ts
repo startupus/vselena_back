@@ -23,9 +23,9 @@ export class CreateInvitations1731840012000 implements MigrationInterface {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR(255) NOT NULL,
         type VARCHAR(20) NOT NULL CHECK (type IN ('organization', 'team')),
-        organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
-        team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
-        invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        "organizationId" UUID REFERENCES organizations(id) ON DELETE CASCADE,
+        "teamId" UUID REFERENCES teams(id) ON DELETE CASCADE,
+        "invitedById" UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         token VARCHAR(255) UNIQUE NOT NULL,
         status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired', 'cancelled')),
         role VARCHAR(100),
@@ -44,7 +44,7 @@ export class CreateInvitations1731840012000 implements MigrationInterface {
     await queryRunner.query(`CREATE INDEX idx_invitations_status ON invitations(status)`);
     await queryRunner.query(`CREATE INDEX idx_invitations_expires_at ON invitations(expires_at)`);
     await queryRunner.query(`CREATE INDEX idx_invitations_invited_by ON invitations(invited_by)`);
-    await queryRunner.query(`CREATE INDEX idx_invitations_organization_id ON invitations(organization_id)`);
+    await queryRunner.query(`CREATE INDEX idx_invitations_organization_id ON invitations("organizationId")`);
     await queryRunner.query(`CREATE INDEX idx_invitations_team_id ON invitations(team_id)`);
   }
 

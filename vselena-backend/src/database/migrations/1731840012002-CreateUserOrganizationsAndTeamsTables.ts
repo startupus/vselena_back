@@ -8,11 +8,11 @@ export class CreateUserOrganizationsAndTeamsTables1731840012002 implements Migra
     await queryRunner.query(`
       CREATE TABLE user_organizations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        "userId" UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        "organizationId" UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(user_id, organization_id)
+        UNIQUE("userId", "organizationId")
       )
     `);
 
@@ -20,29 +20,29 @@ export class CreateUserOrganizationsAndTeamsTables1731840012002 implements Migra
     await queryRunner.query(`
       CREATE TABLE user_teams (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        "userId" UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        "teamId" UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(user_id, team_id)
+        UNIQUE("userId", "teamId")
       )
     `);
 
     // Создаем индексы
     await queryRunner.query(`
-      CREATE INDEX idx_user_organizations_user ON user_organizations(user_id)
+      CREATE INDEX idx_user_organizations_user ON user_organizations("userId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX idx_user_organizations_organization ON user_organizations(organization_id)
+      CREATE INDEX idx_user_organizations_organization ON user_organizations("organizationId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX idx_user_teams_user ON user_teams(user_id)
+      CREATE INDEX idx_user_teams_user ON user_teams("userId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX idx_user_teams_team ON user_teams(team_id)
+      CREATE INDEX idx_user_teams_team ON user_teams("teamId")
     `);
   }
 
