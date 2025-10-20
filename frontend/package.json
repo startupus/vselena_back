@@ -1,0 +1,21 @@
+{
+  "name": "vselena-frontend",
+  "version": "1.0.0",
+  "description": "Простой frontend интерфейс для Vselena Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "frontend",
+    "vselena",
+    "authentication",
+    "password-reset"
+  ],
+  "author": "Vselena Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

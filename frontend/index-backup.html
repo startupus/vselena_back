@@ -1,0 +1,2820 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vselena - Система управления базой знаний</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #4F46E5;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #6B7280;
+            margin-top: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn span {
+            pointer-events: none;
+        }
+
+        .btn:hover {
+            background: #3730A3;
+        }
+
+        .btn:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6B7280;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+
+        /* Стили для уведомлений */
+        .notification {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .notification.unread {
+            background: #EFF6FF;
+            border-color: #3B82F6;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #374151;
+            margin: 0;
+        }
+
+        .notification-time {
+            color: #6B7280;
+            font-size: 0.875rem;
+        }
+
+        .notification-message {
+            color: #6B7280;
+            margin: 0 0 10px 0;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .notification-actions .btn {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+
+        .notification-actions .btn-success {
+            background: #10B981;
+        }
+
+        .notification-actions .btn-success:hover {
+            background: #059669;
+        }
+
+        .notification-actions .btn-danger {
+            background: #EF4444;
+        }
+
+        .notification-actions .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        .notification-actions .btn-outline {
+            background: transparent;
+            border: 1px solid #D1D5DB;
+            color: #374151;
+        }
+
+        .notification-actions .btn-outline:hover {
+            background: #F9FAFB;
+        }
+
+        .error {
+            background: #FEF2F2;
+            color: #DC2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #FECACA;
+        }
+
+        .success {
+            background: #F0FDF4;
+            color: #16A34A;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #BBF7D0;
+        }
+
+        .email-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .email-status.verified {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .email-status.unverified {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            margin: 0 6px;
+        }
+
+        .step.active {
+            background: #4F46E5;
+        }
+
+        .step.completed {
+            background: #10B981;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .forgot-password a {
+            color: #4F46E5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .user-info {
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-info h3 {
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .user-info p {
+            color: #6B7280;
+            margin-bottom: 5px;
+        }
+
+        .logout-btn {
+            background: #DC2626;
+            margin-top: 15px;
+        }
+
+        .logout-btn:hover {
+            background: #B91C1C;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .auth-switch a {
+            color: #4F46E5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-switch p {
+            color: #6B7280;
+            margin: 0;
+        }
+
+        .phone-binding-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #F9FAFB;
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+        }
+
+        .phone-binding-section h4 {
+            margin: 0 0 15px 0;
+            color: #374151;
+            font-size: 16px;
+        }
+
+        .btn-secondary {
+            background: #6B7280;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .organization-item, .team-item, .invitation-item {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .organization-item h6, .team-item h6 {
+            margin: 0 0 10px 0;
+            color: #374151;
+            font-size: 16px;
+        }
+
+        .organization-item p, .team-item p {
+            margin: 5px 0;
+            color: #6B7280;
+            font-size: 14px;
+        }
+
+        .invitation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .invitation-info {
+            flex: 1;
+        }
+
+        .invitation-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+
+        .invitation-type, .invitation-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .invitation-type {
+            background: #E5E7EB;
+            color: #6B7280;
+        }
+
+        .invitation-status {
+            color: white;
+        }
+
+        .status-pending {
+            background: #F59E0B;
+        }
+
+        .status-accepted {
+            background: #10B981;
+        }
+
+        .status-declined {
+            background: #EF4444;
+        }
+
+        .status-expired {
+            background: #6B7280;
+        }
+
+        .invitation-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .organization-actions, .team-actions {
+            margin-top: 10px;
+        }
+
+        .organization-actions button, .team-actions button {
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Логотип -->
+        <div class="logo">
+            <h1>🔐 Vselena</h1>
+            <p>Система управления базой знаний</p>
+        </div>
+
+        <!-- Индикатор шагов -->
+        <div class="step-indicator">
+            <div class="step active" id="step1"></div>
+            <div class="step" id="step2"></div>
+            <div class="step" id="step3"></div>
+        </div>
+
+        <!-- Сообщения -->
+        <div id="message" class="hidden"></div>
+
+        <!-- Умная авторизация -->
+        <div id="smartAuthForm">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Вход в систему</h2>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="your@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" placeholder="Введите пароль" required>
+            </div>
+            <button type="button" class="btn" id="smartAuthBtn">
+                <span id="smartAuthText">Войти</span>
+                <span id="smartAuthLoading" class="loading hidden"></span>
+            </button>
+            <div class="forgot-password">
+                <a href="#" id="forgotPasswordLink">Забыли пароль?</a>
+                <a href="#" id="emailCodeLink">Войти через код с почты</a>
+            </div>
+        </div>
+
+        <!-- Форма дополнения информации -->
+        <div id="completeInfoForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Дополните информацию</h2>
+            <p style="text-align: center; margin-bottom: 20px; color: #6B7280;">Для завершения регистрации укажите ваши данные</p>
+            <div class="form-group">
+                <label for="completeFirstName">Имя</label>
+                <input type="text" id="completeFirstName" placeholder="Ваше имя" required>
+            </div>
+            <div class="form-group">
+                <label for="completeLastName">Фамилия</label>
+                <input type="text" id="completeLastName" placeholder="Ваша фамилия" required>
+            </div>
+            <button type="button" class="btn" id="completeInfoBtn">
+                <span id="completeInfoText">Завершить</span>
+                <span id="completeInfoLoading" class="loading hidden"></span>
+            </button>
+        </div>
+
+        <!-- Форма регистрации -->
+        <div id="registerForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Регистрация</h2>
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" placeholder="your@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Пароль</label>
+                <input type="password" id="regPassword" placeholder="Введите пароль" required>
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPassword">Подтвердите пароль</label>
+                <input type="password" id="regConfirmPassword" placeholder="Подтвердите пароль" required>
+            </div>
+            <div class="form-group">
+                <label for="regFirstName">Имя</label>
+                <input type="text" id="regFirstName" placeholder="Ваше имя" required>
+            </div>
+            <div class="form-group">
+                <label for="regLastName">Фамилия</label>
+                <input type="text" id="regLastName" placeholder="Ваша фамилия" required>
+            </div>
+            <button class="btn" id="registerBtn">
+                <span id="registerText">Зарегистрироваться</span>
+                <span id="registerLoading" class="loading hidden"></span>
+            </button>
+            <div class="auth-switch">
+                <p>Уже есть аккаунт? <a href="#" id="showLoginLink">Войти</a></p>
+            </div>
+        </div>
+
+        <!-- Форма дополнительной информации -->
+        <div id="additionalInfoForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Дополнительная информация</h2>
+            <div class="form-group">
+                <label for="firstName">Имя</label>
+                <input type="text" id="firstName" placeholder="Ваше имя" required>
+            </div>
+            <div class="form-group">
+                <label for="lastName">Фамилия</label>
+                <input type="text" id="lastName" placeholder="Ваша фамилия" required>
+            </div>
+            <button class="btn" id="completeRegistrationBtn">
+                <span id="completeText">Завершить регистрацию</span>
+                <span id="completeLoading" class="loading hidden"></span>
+            </button>
+        </div>
+
+        <!-- Форма восстановления пароля -->
+        <div id="forgotPasswordForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Восстановление пароля</h2>
+            <div class="form-group">
+                <label for="forgotEmail">Email</label>
+                <input type="email" id="forgotEmail" placeholder="your@email.com" required>
+            </div>
+            <button class="btn" id="sendResetBtn">
+                <span id="sendResetText">Отправить ссылку</span>
+                <span id="sendResetLoading" class="loading hidden"></span>
+            </button>
+            <button class="btn btn-secondary" id="backToLoginBtn">Назад к входу</button>
+        </div>
+
+        <!-- Форма входа через код с почты -->
+        <div id="emailCodeForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Вход через код с почты</h2>
+            <div class="form-group">
+                <label for="emailCodeEmail">Email</label>
+                <input type="email" id="emailCodeEmail" placeholder="your@email.com" required>
+            </div>
+            <button class="btn" id="sendEmailCodeBtn">
+                <span id="sendEmailCodeText">Отправить код</span>
+                <span id="sendEmailCodeLoading" class="loading hidden"></span>
+            </button>
+            <div class="form-group" id="codeInputGroup" style="display: none;">
+                <label for="emailCode">Код подтверждения</label>
+                <input type="text" id="emailCode" placeholder="Введите 6-значный код" maxlength="6" required>
+            </div>
+            <button class="btn" id="verifyEmailCodeBtn" style="display: none;">
+                <span id="verifyEmailCodeText">Подтвердить код</span>
+                <span id="verifyEmailCodeLoading" class="loading hidden"></span>
+            </button>
+            <button class="btn btn-secondary" id="backToLoginFromCodeBtn">Назад к входу</button>
+        </div>
+
+        <!-- Форма смены пароля -->
+        <div id="resetPasswordForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #374151;">Смена пароля</h2>
+            <div class="form-group">
+                <label for="newPassword">Новый пароль</label>
+                <input type="password" id="newPassword" placeholder="Введите новый пароль" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Подтвердите пароль</label>
+                <input type="password" id="confirmPassword" placeholder="Подтвердите новый пароль" required>
+            </div>
+            <button class="btn" id="resetPasswordBtn">
+                <span id="resetPasswordText">Сменить пароль</span>
+                <span id="resetPasswordLoading" class="loading hidden"></span>
+            </button>
+        </div>
+
+        <!-- Информация о пользователе -->
+        <div id="userInfo" class="hidden">
+            <div class="user-info">
+                <h3>Добро пожаловать!</h3>
+                <p><strong>Email:</strong> <span id="userEmail"></span> <span id="emailStatus"></span></p>
+                <p><strong>Имя:</strong> <span id="userName"></span></p>
+                <p><strong>Телефон:</strong> <span id="userPhone">Не привязан</span></p>
+                <p><strong>Роли:</strong> <span id="userRoles"></span></p>
+                <p><strong>Права:</strong> <span id="userPermissions"></span></p>
+            </div>
+            
+            <!-- Форма привязки телефона -->
+            <div id="phoneBindingSection" class="phone-binding-section">
+                <h4>Привязать номер телефона</h4>
+                <div class="form-group">
+                    <label for="phoneNumber">Номер телефона</label>
+                    <input type="tel" id="phoneNumber" placeholder="+7 (999) 123-45-67" required>
+                </div>
+                <button type="button" class="btn" id="sendPhoneCodeBtn">
+                    <span id="sendPhoneCodeText">Отправить код</span>
+                    <span id="sendPhoneCodeLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Форма ввода кода -->
+                <div id="phoneCodeForm" class="hidden">
+                    <div class="form-group">
+                        <label for="phoneCode">Код из SMS</label>
+                        <input type="text" id="phoneCode" placeholder="123456" maxlength="6" required>
+                    </div>
+                    <button type="button" class="btn" id="verifyPhoneCodeBtn">
+                        <span id="verifyPhoneCodeText">Подтвердить</span>
+                        <span id="verifyPhoneCodeLoading" class="loading hidden"></span>
+                    </button>
+                </div>
+                
+                <!-- Кнопка отвязки телефона -->
+                <button type="button" class="btn btn-secondary" id="unbindPhoneBtn" style="display: none;">
+                    Отвязать телефон
+                </button>
+            </div>
+            
+            <!-- Секция подтверждения email -->
+            <div id="emailVerificationSection" class="phone-binding-section" style="display: none;">
+                <h4>Подтвердить email</h4>
+                <p>Для повышения роли необходимо подтвердить email адрес</p>
+                <button type="button" class="btn" id="sendEmailVerificationBtn">
+                    <span id="sendEmailVerificationText">Отправить письмо подтверждения</span>
+                    <span id="sendEmailVerificationLoading" class="loading hidden"></span>
+                </button>
+            </div>
+            
+            <!-- Уведомления -->
+            <div id="notificationsSection" class="phone-binding-section">
+                <h4>🔔 Уведомления</h4>
+                <p>Ваши уведомления и приглашения</p>
+                
+                <div id="notificationsContainer">
+                    <div id="notificationsList"></div>
+                    <div id="noNotifications" class="hidden">
+                        <p style="color: #6B7280; text-align: center; padding: 20px;">У вас пока нет уведомлений</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button type="button" class="btn btn-secondary" id="markAllReadBtn">
+                        <span id="markAllReadText">Отметить все как прочитанные</span>
+                        <span id="markAllReadLoading" class="loading hidden"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Управление организациями -->
+            <div id="organizationsSection" class="phone-binding-section">
+                <h4>Управление организациями</h4>
+                <p>Создавайте и управляйте организациями</p>
+                
+                <!-- Создание организации -->
+                <div class="form-group">
+                    <label for="orgName">Название организации</label>
+                    <input type="text" id="orgName" placeholder="Название организации" required>
+                </div>
+                <div class="form-group">
+                    <label for="orgSlug">Slug (уникальный идентификатор)</label>
+                    <input type="text" id="orgSlug" placeholder="my-organization" required>
+                </div>
+                <button type="button" class="btn" id="createOrganizationBtn">
+                    <span id="createOrganizationText">Создать организацию</span>
+                    <span id="createOrganizationLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Список организаций -->
+                <div id="organizationsList" class="hidden">
+                    <h5>Мои организации:</h5>
+                    <div id="organizationsContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Управление командами -->
+            <div id="teamsSection" class="phone-binding-section">
+                <h4>Управление командами</h4>
+                <p>Создавайте и управляйте командами</p>
+                
+                <!-- Создание команды -->
+                <div class="form-group">
+                    <label for="teamName">Название команды</label>
+                    <input type="text" id="teamName" placeholder="Название команды" required>
+                </div>
+                <div class="form-group">
+                    <label for="teamDescription">Описание команды</label>
+                    <textarea id="teamDescription" placeholder="Описание команды" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="teamOrganization">Организация (необязательно)</label>
+                    <select id="teamOrganization">
+                        <option value="">Без организации</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" id="createTeamBtn">
+                    <span id="createTeamText">Создать команду</span>
+                    <span id="createTeamLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Список команд -->
+                <div id="teamsList" class="hidden">
+                    <h5>Мои команды:</h5>
+                    <div id="teamsContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Система приглашений -->
+            <div id="invitationsSection" class="phone-binding-section">
+                <h4>Приглашения сотрудников</h4>
+                <p>Приглашайте новых сотрудников в команды и организации</p>
+                
+                <!-- Форма создания приглашения -->
+                <div class="form-group">
+                    <label for="invitationEmail">Email сотрудника</label>
+                    <input type="email" id="invitationEmail" placeholder="colleague@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="invitationFirstName">Имя (необязательно)</label>
+                    <input type="text" id="invitationFirstName" placeholder="Иван">
+                </div>
+                
+                <div class="form-group">
+                    <label for="invitationLastName">Фамилия (необязательно)</label>
+                    <input type="text" id="invitationLastName" placeholder="Петров">
+                </div>
+                
+                <div class="form-group">
+                    <label for="invitationType">Тип приглашения</label>
+                    <select id="invitationType">
+                        <option value="team">Команда</option>
+                        <option value="organization">Организация</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="invitationTeamGroup">
+                    <label for="invitationTeam">Команда</label>
+                    <select id="invitationTeam">
+                        <option value="">Выберите команду</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="invitationOrgGroup">
+                    <label for="invitationOrganization">Организация</label>
+                    <select id="invitationOrganization">
+                        <option value="">Выберите организацию</option>
+                    </select>
+                </div>
+                
+           <div style="display: flex; gap: 10px; margin-top: 15px;">
+               <button type="button" class="btn" id="createInvitationBtn">
+                   <span id="createInvitationText">Отправить приглашение (email)</span>
+                   <span id="createInvitationLoading" class="loading hidden"></span>
+               </button>
+               <button type="button" class="btn btn-secondary" id="createInternalInvitationBtn">
+                   <span id="createInternalInvitationText">Создать внутреннее приглашение</span>
+                   <span id="createInternalInvitationLoading" class="loading hidden"></span>
+               </button>
+           </div>
+                
+                <!-- Список приглашений -->
+                <div id="invitationsList" class="hidden">
+                    <h5>Мои приглашения:</h5>
+                    <div id="invitationsContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Реферальная система -->
+            <div id="referralSection" class="phone-binding-section">
+                <h4>Реферальная система</h4>
+                <p>Приглашайте друзей и получайте бонусы!</p>
+                
+                <!-- Генерация реферальной ссылки -->
+                <div class="form-group">
+                    <label for="referralCustomCode">Кастомный код (необязательно)</label>
+                    <input type="text" id="referralCustomCode" placeholder="my-custom-code" maxlength="20">
+                </div>
+                <button type="button" class="btn" id="generateReferralLinkBtn">
+                    <span id="generateReferralLinkText">Создать реферальную ссылку</span>
+                    <span id="generateReferralLinkLoading" class="loading hidden"></span>
+                </button>
+                
+                <!-- Список реферальных ссылок -->
+                <div id="referralLinksList" class="hidden">
+                    <h5>Мои реферальные ссылки:</h5>
+                    <div id="referralLinksContainer"></div>
+                </div>
+                
+                <!-- Статистика рефералов -->
+                <div id="referralStats" class="hidden">
+                    <h5>Статистика рефералов:</h5>
+                    <div id="referralStatsContainer"></div>
+                </div>
+            </div>
+            
+            <button class="btn logout-btn" id="logoutBtn">Выйти</button>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация
+        const API_BASE = 'http://localhost:3001/api';
+        let currentUser = null;
+        let resetToken = null;
+
+        // Элементы DOM
+        const elements = {
+            message: document.getElementById('message'),
+            smartAuthForm: document.getElementById('smartAuthForm'),
+            completeInfoForm: document.getElementById('completeInfoForm'),
+            registerForm: document.getElementById('registerForm'),
+            additionalInfoForm: document.getElementById('additionalInfoForm'),
+            forgotPasswordForm: document.getElementById('forgotPasswordForm'),
+            emailCodeForm: document.getElementById('emailCodeForm'),
+            resetPasswordForm: document.getElementById('resetPasswordForm'),
+            userInfo: document.getElementById('userInfo'),
+            userEmail: document.getElementById('userEmail'),
+            userName: document.getElementById('userName'),
+            userPhone: document.getElementById('userPhone'),
+            userRoles: document.getElementById('userRoles'),
+            userPermissions: document.getElementById('userPermissions'),
+            emailStatus: document.getElementById('emailStatus'),
+            emailVerificationSection: document.getElementById('emailVerificationSection'),
+            sendEmailVerificationBtn: document.getElementById('sendEmailVerificationBtn'),
+            sendEmailVerificationText: document.getElementById('sendEmailVerificationText'),
+            sendEmailVerificationLoading: document.getElementById('sendEmailVerificationLoading'),
+            phoneBindingSection: document.getElementById('phoneBindingSection'),
+            phoneNumber: document.getElementById('phoneNumber'),
+            phoneCode: document.getElementById('phoneCode'),
+            phoneCodeForm: document.getElementById('phoneCodeForm'),
+            sendPhoneCodeBtn: document.getElementById('sendPhoneCodeBtn'),
+            sendPhoneCodeText: document.getElementById('sendPhoneCodeText'),
+            sendPhoneCodeLoading: document.getElementById('sendPhoneCodeLoading'),
+            verifyPhoneCodeBtn: document.getElementById('verifyPhoneCodeBtn'),
+            verifyPhoneCodeText: document.getElementById('verifyPhoneCodeText'),
+            verifyPhoneCodeLoading: document.getElementById('verifyPhoneCodeLoading'),
+            // Организации
+            organizationsSection: document.getElementById('organizationsSection'),
+            organizationsList: document.getElementById('organizationsList'),
+            organizationsContainer: document.getElementById('organizationsContainer'),
+            createOrganizationBtn: document.getElementById('createOrganizationBtn'),
+            createOrganizationText: document.getElementById('createOrganizationText'),
+            createOrganizationLoading: document.getElementById('createOrganizationLoading'),
+            // Команды
+            teamsSection: document.getElementById('teamsSection'),
+            teamsList: document.getElementById('teamsList'),
+            teamsContainer: document.getElementById('teamsContainer'),
+            createTeamBtn: document.getElementById('createTeamBtn'),
+            createTeamText: document.getElementById('createTeamText'),
+            createTeamLoading: document.getElementById('createTeamLoading'),
+            // Приглашения
+            invitationsSection: document.getElementById('invitationsSection'),
+            invitationEmail: document.getElementById('invitationEmail'),
+            invitationFirstName: document.getElementById('invitationFirstName'),
+            invitationLastName: document.getElementById('invitationLastName'),
+            invitationType: document.getElementById('invitationType'),
+            invitationTeam: document.getElementById('invitationTeam'),
+            invitationOrganization: document.getElementById('invitationOrganization'),
+            invitationTeamGroup: document.getElementById('invitationTeamGroup'),
+            invitationOrgGroup: document.getElementById('invitationOrgGroup'),
+            createInvitationBtn: document.getElementById('createInvitationBtn'),
+            createInvitationText: document.getElementById('createInvitationText'),
+            createInvitationLoading: document.getElementById('createInvitationLoading'),
+            createInternalInvitationBtn: document.getElementById('createInternalInvitationBtn'),
+            createInternalInvitationText: document.getElementById('createInternalInvitationText'),
+            createInternalInvitationLoading: document.getElementById('createInternalInvitationLoading'),
+            invitationsList: document.getElementById('invitationsList'),
+            invitationsContainer: document.getElementById('invitationsContainer'),
+            // Реферальная система
+            referralSection: document.getElementById('referralSection'),
+            referralCustomCode: document.getElementById('referralCustomCode'),
+            generateReferralLinkBtn: document.getElementById('generateReferralLinkBtn'),
+            generateReferralLinkText: document.getElementById('generateReferralLinkText'),
+            generateReferralLinkLoading: document.getElementById('generateReferralLinkLoading'),
+            referralLinksList: document.getElementById('referralLinksList'),
+            referralLinksContainer: document.getElementById('referralLinksContainer'),
+            referralStats: document.getElementById('referralStats'),
+            referralStatsContainer: document.getElementById('referralStatsContainer'),
+            unbindPhoneBtn: document.getElementById('unbindPhoneBtn'),
+            smartAuthBtn: document.getElementById('smartAuthBtn'),
+            smartAuthText: document.getElementById('smartAuthText'),
+            smartAuthLoading: document.getElementById('smartAuthLoading'),
+            completeInfoBtn: document.getElementById('completeInfoBtn'),
+            completeInfoText: document.getElementById('completeInfoText'),
+            completeInfoLoading: document.getElementById('completeInfoLoading'),
+            registerBtn: document.getElementById('registerBtn'),
+            registerText: document.getElementById('registerText'),
+            registerLoading: document.getElementById('registerLoading'),
+            completeRegistrationBtn: document.getElementById('completeRegistrationBtn'),
+            completeText: document.getElementById('completeText'),
+            completeLoading: document.getElementById('completeLoading'),
+            sendResetBtn: document.getElementById('sendResetBtn'),
+            sendResetText: document.getElementById('sendResetText'),
+            sendResetLoading: document.getElementById('sendResetLoading'),
+            sendEmailCodeBtn: document.getElementById('sendEmailCodeBtn'),
+            sendEmailCodeText: document.getElementById('sendEmailCodeText'),
+            sendEmailCodeLoading: document.getElementById('sendEmailCodeLoading'),
+            verifyEmailCodeBtn: document.getElementById('verifyEmailCodeBtn'),
+            verifyEmailCodeText: document.getElementById('verifyEmailCodeText'),
+            verifyEmailCodeLoading: document.getElementById('verifyEmailCodeLoading'),
+            resetPasswordBtn: document.getElementById('resetPasswordBtn'),
+            resetPasswordText: document.getElementById('resetPasswordText'),
+            resetPasswordLoading: document.getElementById('resetPasswordLoading'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            forgotPasswordLink: document.getElementById('forgotPasswordLink'),
+            emailCodeLink: document.getElementById('emailCodeLink'),
+            backToLoginBtn: document.getElementById('backToLoginBtn'),
+            backToLoginFromCodeBtn: document.getElementById('backToLoginFromCodeBtn'),
+            showRegisterLink: document.getElementById('showRegisterLink'),
+            showLoginLink: document.getElementById('showLoginLink'),
+            step1: document.getElementById('step1'),
+            step2: document.getElementById('step2'),
+            step3: document.getElementById('step3')
+        };
+
+        // Утилиты
+        function showMessage(text, type = 'error') {
+            elements.message.textContent = text;
+            elements.message.className = type;
+            elements.message.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            elements.message.classList.add('hidden');
+        }
+
+        function showLoading(button, text, loading) {
+            button.disabled = true;
+            text.classList.add('hidden');
+            loading.classList.remove('hidden');
+        }
+
+        function hideLoading(button, text, loading) {
+            button.disabled = false;
+            text.classList.remove('hidden');
+            loading.classList.add('hidden');
+        }
+
+        function showForm(formId) {
+            document.querySelectorAll('[id$="Form"], [id$="Info"]').forEach(form => {
+                form.classList.add('hidden');
+            });
+            document.getElementById(formId).classList.remove('hidden');
+        }
+
+        function updateSteps(step) {
+            [elements.step1, elements.step2, elements.step3].forEach((s, i) => {
+                s.classList.remove('active', 'completed');
+                if (i < step) s.classList.add('completed');
+                else if (i === step) s.classList.add('active');
+            });
+        }
+
+        // API функции
+        async function apiCall(url, options = {}) {
+            try {
+                const token = localStorage.getItem('accessToken');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                const response = await fetch(`${API_BASE}${url}`, {
+                    headers,
+                    ...options
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Умная авторизация
+        async function smartAuth(email, password, firstName, lastName, referralCode) {
+            const data = { email, password };
+            if (firstName) data.firstName = firstName;
+            if (lastName) data.lastName = lastName;
+            if (referralCode) data.referralCode = referralCode;
+            
+            const response = await apiCall('/auth/smart-auth', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (response.success) {
+                if (response.needsAdditionalInfo) {
+                    // Нужны дополнительные данные
+                    return {
+                        success: true,
+                        needsAdditionalInfo: true,
+                        missingFields: response.missingFields,
+                        user: response.user,
+                        message: response.message
+                    };
+                } else {
+                    // Полная авторизация
+                    currentUser = response.user;
+                    localStorage.setItem('accessToken', response.accessToken);
+                    localStorage.setItem('refreshToken', response.refreshToken);
+                    await showUserInfo();
+                    return {
+                        success: true,
+                        needsAdditionalInfo: false,
+                        message: response.message
+                    };
+                }
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Дополнение информации о пользователе
+        async function completeUserInfo(userId, firstName, lastName) {
+            // Получаем реферальный код из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const referralCode = urlParams.get('ref');
+            
+            const data = { userId, firstName, lastName };
+            if (referralCode) data.referralCode = referralCode;
+            
+            const response = await apiCall('/auth/complete-info', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (response.success) {
+                currentUser = response.user;
+                localStorage.setItem('accessToken', response.accessToken);
+                localStorage.setItem('refreshToken', response.refreshToken);
+                await showUserInfo();
+                return true;
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Отправка SMS кода для привязки телефона
+        async function sendPhoneVerificationCode(phone) {
+            const response = await apiCall('/auth/bind-phone/send-code', {
+                method: 'POST',
+                body: JSON.stringify({ phone })
+            });
+
+            if (response.success) {
+                return {
+                    success: true,
+                    message: response.message,
+                    verificationCode: response.verificationCode // Для тестирования
+                };
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Подтверждение привязки телефона
+        async function verifyPhoneCode(phone, code) {
+            const response = await apiCall('/auth/bind-phone/verify', {
+                method: 'POST',
+                body: JSON.stringify({ phone, code })
+            });
+
+            if (response.success) {
+                // Обновляем информацию о пользователе
+                await getCurrentUser();
+                return true;
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Отвязка телефона
+        async function unbindPhone() {
+            const response = await apiCall('/auth/bind-phone/unbind', {
+                method: 'POST'
+            });
+
+            if (response.success) {
+                // Обновляем информацию о пользователе
+                await getCurrentUser();
+                return true;
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Функции для подтверждения email
+        async function sendEmailVerification(email) {
+            const response = await apiCall('/auth/email-verification/send', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            });
+
+            if (response.success) {
+                return response;
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        async function verifyEmail(token) {
+            const response = await apiCall('/auth/email-verification/verify', {
+                method: 'POST',
+                body: JSON.stringify({ token })
+            });
+
+            if (response.success) {
+                return response;
+            } else {
+                throw new Error(response.message);
+            }
+        }
+
+        // Классическая авторизация (оставляем для совместимости)
+        async function login(email, password) {
+            const loginData = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            // Сохраняем пользователя
+            currentUser = loginData.user;
+            localStorage.setItem('accessToken', loginData.accessToken);
+            localStorage.setItem('refreshToken', loginData.refreshToken);
+            
+            await showUserInfo();
+            return true;
+        }
+
+        // Классическая регистрация
+        async function register(email, password, firstName, lastName) {
+            const registerData = await apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    email, 
+                    password,
+                    firstName,
+                    lastName
+                })
+            });
+
+            // Сохраняем пользователя и токены
+            currentUser = registerData.user;
+            localStorage.setItem('accessToken', registerData.accessToken);
+            localStorage.setItem('refreshToken', registerData.refreshToken);
+            
+            await showUserInfo();
+            return true;
+        }
+
+        // Завершение регистрации
+        async function completeRegistration(email, password, firstName, lastName) {
+            try {
+                // Сначала входим с существующими данными
+                const loginData = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                // Обновляем информацию о пользователе
+                await apiCall(`/users/${loginData.user.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${loginData.accessToken}`
+                    },
+                    body: JSON.stringify({ firstName, lastName })
+                });
+
+                // Сохраняем пользователя
+                currentUser = { ...loginData.user, firstName, lastName };
+                localStorage.setItem('accessToken', loginData.accessToken);
+                localStorage.setItem('refreshToken', loginData.refreshToken);
+                
+                await showUserInfo();
+                return true;
+
+            } catch (error) {
+                throw new Error('Ошибка завершения регистрации: ' + error.message);
+            }
+        }
+
+        // Восстановление пароля
+        async function requestPasswordReset(email) {
+            await apiCall('/password-reset/forgot', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            });
+        }
+
+        // Смена пароля
+        async function resetPassword(token, newPassword) {
+            await apiCall('/password-reset/reset', {
+                method: 'POST',
+                body: JSON.stringify({ token, newPassword })
+            });
+        }
+
+        // Проверка токена восстановления
+        async function validateResetToken(token) {
+            const response = await apiCall(`/password-reset/validate-token?token=${token}`);
+            return response;
+        }
+
+        // Отправка кода на email
+        async function sendEmailCode(email) {
+            await apiCall('/auth/2fa/email/send-code', {
+                method: 'POST',
+                body: JSON.stringify({ email })
+            });
+        }
+
+        // Подтверждение кода с email
+        async function verifyEmailCode(email, code) {
+            const response = await apiCall('/auth/2fa/email/verify-code', {
+                method: 'POST',
+                body: JSON.stringify({ email, code })
+            });
+            
+            // Сохраняем пользователя и токены
+            currentUser = response.user;
+            localStorage.setItem('accessToken', response.accessToken);
+            localStorage.setItem('refreshToken', response.refreshToken);
+            
+            await showUserInfo();
+            return response;
+        }
+
+        // Получение информации о пользователе
+        async function getCurrentUser() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return null;
+
+            try {
+                const user = await apiCall('/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return user;
+            } catch (error) {
+                // Токен недействителен
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                return null;
+            }
+        }
+
+        // Показ информации о пользователе
+        async function showUserInfo() {
+            console.log('🔍 showUserInfo - currentUser:', currentUser);
+            console.log('🔍 showUserInfo - currentUser.roles:', currentUser.roles);
+            console.log('🔍 showUserInfo - currentUser.permissions:', currentUser.permissions);
+            
+            if (elements.userEmail) elements.userEmail.textContent = currentUser.email;
+            if (elements.userName) elements.userName.textContent = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Не указано';
+            
+            // Отображение статуса email
+            if (elements.emailStatus) {
+                if (currentUser.emailVerified) {
+                    elements.emailStatus.textContent = '✓ Подтвержден';
+                    elements.emailStatus.className = 'email-status verified';
+                    // Скрываем секцию подтверждения email
+                    if (elements.emailVerificationSection) elements.emailVerificationSection.style.display = 'none';
+                } else {
+                    elements.emailStatus.textContent = '⚠ Не подтвержден';
+                    elements.emailStatus.className = 'email-status unverified';
+                    // Показываем секцию подтверждения email
+                    if (elements.emailVerificationSection) elements.emailVerificationSection.style.display = 'block';
+                }
+            }
+            
+            // Отображение телефона
+            if (elements.userPhone) {
+                if (currentUser.phone) {
+                    elements.userPhone.textContent = currentUser.phone;
+                    // Показываем кнопку отвязки
+                    if (elements.unbindPhoneBtn) elements.unbindPhoneBtn.style.display = 'inline-block';
+                } else {
+                    elements.userPhone.textContent = 'Не привязан';
+                    // Скрываем кнопку отвязки
+                    if (elements.unbindPhoneBtn) elements.unbindPhoneBtn.style.display = 'none';
+                }
+            }
+            
+            // Исправляем отображение ролей
+            let rolesText = 'Нет ролей';
+            if (currentUser.roles && Array.isArray(currentUser.roles)) {
+                // Если роли - это массив объектов, извлекаем имена
+                if (currentUser.roles.length > 0 && typeof currentUser.roles[0] === 'object') {
+                    rolesText = currentUser.roles.map(role => role.name).join(', ');
+                } else {
+                    // Если роли - это массив строк
+                    rolesText = currentUser.roles.join(', ');
+                }
+            }
+            if (elements.userRoles) elements.userRoles.textContent = rolesText;
+            
+            // Исправляем отображение прав
+            let permissionsText = 'Нет прав';
+            
+            // Сначала проверяем, есть ли права напрямую в currentUser.permissions
+            if (currentUser.permissions && Array.isArray(currentUser.permissions)) {
+                permissionsText = currentUser.permissions.slice(0, 5).join(', ') + (currentUser.permissions.length > 5 ? '...' : '');
+            } else if (currentUser.roles && Array.isArray(currentUser.roles)) {
+                // Если нет прямых прав, извлекаем права из ролей
+                const allPermissions = [];
+                currentUser.roles.forEach(role => {
+                    if (role.permissions && Array.isArray(role.permissions)) {
+                        role.permissions.forEach(perm => {
+                            if (typeof perm === 'object' && perm.name) {
+                                allPermissions.push(perm.name);
+                            } else if (typeof perm === 'string') {
+                                allPermissions.push(perm);
+                            }
+                        });
+                    }
+                });
+                
+                if (allPermissions.length > 0) {
+                    permissionsText = allPermissions.slice(0, 5).join(', ') + (allPermissions.length > 5 ? '...' : '');
+                }
+            }
+            if (elements.userPermissions) elements.userPermissions.textContent = permissionsText;
+            
+            showForm('userInfo');
+            updateSteps(3);
+            
+            // Загружаем данные
+            await Promise.all([
+                loadOrganizations(),
+                loadTeams(),
+                loadOrganizationsForSelect(),
+                loadReferralData(),
+                loadInvitations(),
+                loadTeamsForInvitation(),
+                loadNotifications()
+            ]);
+        }
+
+        // ========== УПРАВЛЕНИЕ ОРГАНИЗАЦИЯМИ ==========
+        
+        // Загрузка организаций
+        async function loadOrganizations() {
+            try {
+                const response = await apiCall('/organizations', 'GET');
+                if (response && response.length > 0) {
+                    displayOrganizations(response);
+                    elements.organizationsList.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки организаций:', error);
+            }
+        }
+
+        // Отображение организаций
+        function displayOrganizations(organizations) {
+            const container = elements.organizationsContainer;
+            container.innerHTML = '';
+
+            organizations.forEach(org => {
+                const orgDiv = document.createElement('div');
+                orgDiv.className = 'organization-item';
+                orgDiv.innerHTML = `
+                    <h6>${org.name}</h6>
+                    <p><strong>Slug:</strong> ${org.slug}</p>
+                    <p><strong>Создана:</strong> ${new Date(org.createdAt).toLocaleDateString()}</p>
+                    <div class="organization-actions">
+                        <button class="btn btn-secondary" onclick="editOrganization('${org.id}')">Редактировать</button>
+                        <button class="btn btn-secondary" onclick="deleteOrganization('${org.id}')" style="background: #DC2626;">Удалить</button>
+                    </div>
+                `;
+                container.appendChild(orgDiv);
+            });
+        }
+
+        // Создание организации
+        async function createOrganization(name, slug) {
+            const response = await apiCall('/organizations', {
+                method: 'POST',
+                body: JSON.stringify({ name, slug })
+            });
+
+            if (response) {
+                showMessage('Организация создана успешно!', 'success');
+                await loadOrganizations();
+                await loadTeams(); // Обновляем список команд для выбора организации
+                await loadOrganizationsForSelect(); // Обновляем список организаций для команд
+                await loadOrganizationsForInvitation(); // Обновляем список организаций для приглашений
+            }
+        }
+
+        // ========== УПРАВЛЕНИЕ КОМАНДАМИ ==========
+        
+        // Загрузка команд
+        async function loadTeams() {
+            try {
+                const response = await apiCall('/teams', 'GET');
+                if (response && response.length > 0) {
+                    displayTeams(response);
+                    elements.teamsList.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки команд:', error);
+            }
+        }
+
+        // Отображение команд
+        function displayTeams(teams) {
+            const container = elements.teamsContainer;
+            container.innerHTML = '';
+
+            teams.forEach(team => {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team-item';
+                teamDiv.innerHTML = `
+                    <h6>${team.name}</h6>
+                    <p><strong>Описание:</strong> ${team.description || 'Не указано'}</p>
+                    <p><strong>Организация:</strong> ${team.organization ? team.organization.name : 'Без организации'}</p>
+                    <p><strong>Создана:</strong> ${new Date(team.createdAt).toLocaleDateString()}</p>
+                    <div class="team-actions">
+                        <button class="btn btn-secondary" onclick="editTeam('${team.id}')">Редактировать</button>
+                        <button class="btn btn-secondary" onclick="deleteTeam('${team.id}')" style="background: #DC2626;">Удалить</button>
+                    </div>
+                `;
+                container.appendChild(teamDiv);
+            });
+        }
+
+        // Создание команды
+        async function createTeam(name, description, organizationId) {
+            const data = { name, description };
+            if (organizationId && organizationId !== '') data.organizationId = organizationId;
+
+            const response = await apiCall('/teams', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (response) {
+                showMessage('Команда создана успешно!', 'success');
+                await loadTeams();
+                await loadTeamsForInvitation(); // Обновляем список команд для приглашений
+                await loadOrganizationsForSelect(); // Обновляем список организаций для команд
+            }
+        }
+
+        // ========== ПРИГЛАШЕНИЯ ==========
+        
+        // Создание приглашения
+        async function createInvitation(invitationData) {
+            const response = await apiCall('/invitations', {
+                method: 'POST',
+                body: JSON.stringify(invitationData)
+            });
+
+            if (response) {
+                showMessage('Приглашение отправлено успешно!', 'success');
+                await loadInvitations();
+                return response;
+            }
+        }
+        
+        // Функция создания внутреннего приглашения
+        async function createInternalInvitation(invitationData) {
+            const response = await apiCall('/invitations/internal', {
+                method: 'POST',
+                body: JSON.stringify(invitationData)
+            });
+
+            if (response) {
+                showMessage('Внутреннее приглашение создано успешно!', 'success');
+                await loadInvitations();
+                return response;
+            }
+        }
+
+        // Загрузка приглашений пользователя
+        async function loadInvitations() {
+            try {
+                const response = await apiCall('/invitations/my', 'GET');
+                if (response && response.length > 0) {
+                    elements.invitationsList.classList.remove('hidden');
+                    elements.invitationsContainer.innerHTML = response.map(invitation => `
+                        <div class="invitation-item">
+                            <div class="invitation-info">
+                                <strong>${invitation.email}</strong>
+                                <span class="invitation-type">${invitation.type === 'team' ? 'Команда' : 'Организация'}</span>
+                                <span class="invitation-status status-${invitation.status}">${getStatusText(invitation.status)}</span>
+                            </div>
+                            <div class="invitation-actions">
+                                <button class="btn-small" onclick="copyInvitationLink('${invitation.invitationLink}')">Копировать ссылку</button>
+                                ${invitation.status === 'pending' ? `<button class="btn-small btn-danger" onclick="cancelInvitation('${invitation.id}')">Отменить</button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    elements.invitationsList.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки приглашений:', error);
+            }
+        }
+
+        // Загрузка команд для выбора в приглашении
+        async function loadTeamsForInvitation() {
+            try {
+                const response = await apiCall('/teams', 'GET');
+                const select = elements.invitationTeam;
+                select.innerHTML = '<option value="">Выберите команду</option>';
+                
+                if (response && response.length > 0) {
+                    response.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки команд:', error);
+            }
+        }
+
+        // Загрузка организаций для выбора в приглашении
+        async function loadOrganizationsForInvitation() {
+            try {
+                const response = await apiCall('/organizations', 'GET');
+                const select = elements.invitationOrganization;
+                select.innerHTML = '<option value="">Выберите организацию</option>';
+                
+                if (response && response.length > 0) {
+                    response.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки организаций:', error);
+            }
+        }
+
+        // Копирование ссылки приглашения
+        function copyInvitationLink(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                showMessage('Ссылка скопирована в буфер обмена!', 'success');
+            }).catch(() => {
+                showMessage('Не удалось скопировать ссылку', 'error');
+            });
+        }
+
+        // Отмена приглашения
+        async function cancelInvitation(invitationId) {
+            try {
+                await apiCall(`/invitations/${invitationId}`, {
+                    method: 'DELETE'
+                });
+                showMessage('Приглашение отменено', 'success');
+                await loadInvitations();
+            } catch (error) {
+                showMessage('Ошибка отмены приглашения', 'error');
+            }
+        }
+
+        // Получение текста статуса приглашения
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Ожидает',
+                'accepted': 'Принято',
+                'declined': 'Отклонено',
+                'expired': 'Истекло'
+            };
+            return statusMap[status] || status;
+        }
+
+        // ==================== ФУНКЦИИ УВЕДОМЛЕНИЙ ====================
+        
+        // Загрузка уведомлений пользователя
+        async function loadNotifications() {
+            try {
+                const response = await apiCall('/notifications', 'GET');
+                const notificationsList = document.getElementById('notificationsList');
+                const noNotifications = document.getElementById('noNotifications');
+                
+                if (response && response.length > 0) {
+                    notificationsList.classList.remove('hidden');
+                    noNotifications.classList.add('hidden');
+                    
+                    notificationsList.innerHTML = response.map(notification => `
+                        <div class="notification ${notification.isRead ? '' : 'unread'}" data-id="${notification.id}">
+                            <div class="notification-header">
+                                <h5 class="notification-title">${notification.title}</h5>
+                                <span class="notification-time">${formatDate(notification.createdAt)}</span>
+                            </div>
+                            <p class="notification-message">${notification.message}</p>
+                            ${getNotificationActions(notification)}
+                        </div>
+                    `).join('');
+                } else {
+                    notificationsList.classList.add('hidden');
+                    noNotifications.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки уведомлений:', error);
+            }
+        }
+
+        // Получение действий для уведомления
+        function getNotificationActions(notification) {
+            if (notification.type === 'invitation') {
+                return `
+                    <div class="notification-actions">
+                        <button class="btn btn-success" onclick="acceptInvitation('${notification.id}')">
+                            Принять
+                        </button>
+                        <button class="btn btn-danger" onclick="declineInvitation('${notification.id}')">
+                            Отклонить
+                        </button>
+                        <button class="btn btn-outline" onclick="markNotificationAsRead('${notification.id}')">
+                            Прочитано
+                        </button>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="notification-actions">
+                        <button class="btn btn-outline" onclick="markNotificationAsRead('${notification.id}')">
+                            Прочитано
+                        </button>
+                        <button class="btn btn-outline" onclick="deleteNotification('${notification.id}')">
+                            Удалить
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Принятие приглашения из уведомления
+        async function acceptInvitation(notificationId) {
+            try {
+                showMessage('Принимаем приглашение...', 'info');
+                
+                // Получаем данные уведомления для извлечения invitationId
+                const notification = await getNotificationById(notificationId);
+                if (!notification || !notification.data?.invitationId) {
+                    showMessage('Не удалось найти данные приглашения', 'error');
+                    return;
+                }
+
+                // Принимаем приглашение через новый endpoint
+                const response = await apiCall(`/invitations/accept-notification/${notification.data.invitationId}`, { method: 'POST' });
+                
+                if (response.success) {
+                    showMessage(response.message, 'success');
+                    // Отмечаем уведомление как прочитанное
+                    await markNotificationAsRead(notificationId);
+                    // Обновляем список уведомлений
+                    await loadNotifications();
+                    // Обновляем список приглашений у админа
+                    await loadInvitations();
+                    // Обновляем списки организаций и команд
+                    await loadOrganizations();
+                    await loadTeams();
+                } else {
+                    showMessage('Ошибка принятия приглашения', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка принятия приглашения:', error);
+                showMessage('Ошибка принятия приглашения', 'error');
+            }
+        }
+
+        // Отклонение приглашения из уведомления
+        async function declineInvitation(notificationId) {
+            try {
+                showMessage('Отклоняем приглашение...', 'info');
+                
+                // Получаем данные уведомления для извлечения invitationId
+                const notification = await getNotificationById(notificationId);
+                if (!notification || !notification.data?.invitationId) {
+                    showMessage('Не удалось найти данные приглашения', 'error');
+                    return;
+                }
+
+                // Отклоняем приглашение через новый endpoint
+                const response = await apiCall(`/invitations/decline-notification/${notification.data.invitationId}`, { method: 'POST' });
+                
+                if (response.success) {
+                    showMessage(response.message, 'success');
+                    // Отмечаем уведомление как прочитанное
+                    await markNotificationAsRead(notificationId);
+                    // Обновляем список уведомлений
+                    await loadNotifications();
+                    // Обновляем список приглашений у админа
+                    await loadInvitations();
+                    // Обновляем списки организаций и команд
+                    await loadOrganizations();
+                    await loadTeams();
+                } else {
+                    showMessage('Ошибка отклонения приглашения', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка отклонения приглашения:', error);
+                showMessage('Ошибка отклонения приглашения', 'error');
+            }
+        }
+
+        // Получение уведомления по ID
+        async function getNotificationById(notificationId) {
+            try {
+                const response = await apiCall(`/notifications/${notificationId}`, 'GET');
+                return response;
+            } catch (error) {
+                console.error('Ошибка получения уведомления:', error);
+                return null;
+            }
+        }
+
+        // Отметить уведомление как прочитанное
+        async function markNotificationAsRead(notificationId) {
+            try {
+                await apiCall(`/notifications/${notificationId}/read`, {
+                    method: 'POST'
+                });
+                await loadNotifications();
+            } catch (error) {
+                console.error('Ошибка отметки уведомления как прочитанного:', error);
+            }
+        }
+
+        // Удалить уведомление
+        async function deleteNotification(notificationId) {
+            try {
+                await apiCall(`/notifications/${notificationId}`, {
+                    method: 'DELETE'
+                });
+                showMessage('Уведомление удалено', 'success');
+                await loadNotifications();
+            } catch (error) {
+                showMessage('Ошибка удаления уведомления', 'error');
+            }
+        }
+
+        // Отметить все уведомления как прочитанные
+        async function markAllNotificationsAsRead() {
+            try {
+                const markAllBtn = document.getElementById('markAllReadBtn');
+                const markAllText = document.getElementById('markAllReadText');
+                const markAllLoading = document.getElementById('markAllReadLoading');
+                
+                markAllBtn.disabled = true;
+                markAllText.classList.add('hidden');
+                markAllLoading.classList.remove('hidden');
+                
+                await apiCall('/notifications/read-all', {
+                    method: 'POST'
+                });
+                
+                showMessage('Все уведомления отмечены как прочитанные', 'success');
+                await loadNotifications();
+            } catch (error) {
+                showMessage('Ошибка отметки уведомлений', 'error');
+            } finally {
+                const markAllBtn = document.getElementById('markAllReadBtn');
+                const markAllText = document.getElementById('markAllReadText');
+                const markAllLoading = document.getElementById('markAllReadLoading');
+                
+                markAllBtn.disabled = false;
+                markAllText.classList.remove('hidden');
+                markAllLoading.classList.add('hidden');
+            }
+        }
+
+        // Форматирование даты
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInHours = (now - date) / (1000 * 60 * 60);
+            
+            if (diffInHours < 1) {
+                return 'Только что';
+            } else if (diffInHours < 24) {
+                return `${Math.floor(diffInHours)} ч. назад`;
+            } else if (diffInHours < 48) {
+                return 'Вчера';
+            } else {
+                return date.toLocaleDateString('ru-RU');
+            }
+        }
+
+        // Загрузка организаций для выбора в команде
+        async function loadOrganizationsForSelect() {
+            try {
+                const response = await apiCall('/organizations', 'GET');
+                const select = document.getElementById('teamOrganization');
+                select.innerHTML = '<option value="">Без организации</option>';
+                
+                if (response && response.length > 0) {
+                    response.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки организаций для выбора:', error);
+            }
+        }
+
+        // ========== РЕФЕРАЛЬНАЯ СИСТЕМА ==========
+        
+        // Загрузка реферальных данных
+        async function loadReferralData() {
+            try {
+                await Promise.all([
+                    loadReferralLinks(),
+                    loadReferralStats()
+                ]);
+            } catch (error) {
+                console.error('Ошибка загрузки реферальных данных:', error);
+            }
+        }
+
+        // Загрузка реферальных ссылок
+        async function loadReferralLinks() {
+            try {
+                const response = await apiCall('/auth/referrals/my-links', 'GET');
+                console.log('Реферальные ссылки:', response);
+                
+                if (response && Array.isArray(response)) {
+                    displayReferralLinks(response);
+                    if (response.length > 0) {
+                        elements.referralLinksList.classList.remove('hidden');
+                    } else {
+                        elements.referralLinksList.classList.add('hidden');
+                    }
+                } else {
+                    console.log('Нет реферальных ссылок или неверный формат ответа');
+                    elements.referralLinksList.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки реферальных ссылок:', error);
+                elements.referralLinksList.classList.add('hidden');
+            }
+        }
+
+        // Загрузка статистики рефералов
+        async function loadReferralStats() {
+            try {
+                const response = await apiCall('/auth/referrals/stats', 'GET');
+                if (response) {
+                    displayReferralStats(response);
+                    elements.referralStats.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки статистики рефералов:', error);
+            }
+        }
+
+        // Отображение реферальных ссылок
+        function displayReferralLinks(links) {
+            const container = elements.referralLinksContainer;
+            if (!container) {
+                console.error('Контейнер реферальных ссылок не найден');
+                return;
+            }
+            
+            container.innerHTML = '';
+
+            if (!links || links.length === 0) {
+                container.innerHTML = '<p style="color: #6B7280; text-align: center; padding: 20px;">Реферальных ссылок пока нет</p>';
+                return;
+            }
+
+            links.forEach(link => {
+                const linkDiv = document.createElement('div');
+                linkDiv.className = 'referral-link-item';
+                linkDiv.style.cssText = `
+                    background: #F9FAFB;
+                    border: 1px solid #E5E7EB;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                `;
+
+                const statusColor = link.status === 'converted' ? '#10B981' : 
+                                  link.status === 'expired' ? '#EF4444' : '#F59E0B';
+
+                linkDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong>Код: ${link.referralCode}</strong>
+                        <span style="color: ${statusColor}; font-size: 12px; text-transform: uppercase;">
+                            ${link.status}
+                        </span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <input type="text" value="${link.referralLink}" readonly 
+                               style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; font-size: 12px;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6B7280;">
+                        <span>Клики: ${link.clickCount}</span>
+                        <span>Конверсии: ${link.conversionCount}</span>
+                        <span>Создана: ${new Date(link.createdAt).toLocaleDateString()}</span>
+                    </div>
+                `;
+
+                container.appendChild(linkDiv);
+            });
+        }
+
+        // Отображение статистики рефералов
+        function displayReferralStats(stats) {
+            const container = elements.referralStatsContainer;
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div style="text-align: center; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${stats.totalReferralLinks}</div>
+                        <div style="font-size: 12px; color: #6B7280;">Всего ссылок</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${stats.totalClicks}</div>
+                        <div style="font-size: 12px; color: #6B7280;">Всего кликов</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${stats.totalConversions}</div>
+                        <div style="font-size: 12px; color: #6B7280;">Конверсий</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${stats.conversionRate}%</div>
+                        <div style="font-size: 12px; color: #6B7280;">Конверсия</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Генерация реферальной ссылки
+        async function generateReferralLink() {
+            const customCode = elements.referralCustomCode.value.trim();
+            
+            showLoading(elements.generateReferralLinkBtn, elements.generateReferralLinkText, elements.generateReferralLinkLoading);
+
+            try {
+                const response = await apiCall('/auth/referrals/generate-link', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        customCode: customCode || undefined,
+                        expiresInDays: 30
+                    })
+                });
+
+                if (response) {
+                    showMessage('Реферальная ссылка создана успешно!');
+                    elements.referralCustomCode.value = '';
+                    await loadReferralData(); // Перезагружаем данные
+                }
+            } catch (error) {
+                showMessage(`Ошибка: ${error.message}`);
+            } finally {
+                hideLoading(elements.generateReferralLinkBtn, elements.generateReferralLinkText, elements.generateReferralLinkLoading);
+            }
+        }
+
+        // Показ формы дополнительной информации
+        function showAdditionalInfoForm(email, password) {
+            document.getElementById('email').value = email;
+            showForm('additionalInfoForm');
+            updateSteps(2);
+        }
+
+        // Обработчики событий (перенесены в bindEventListeners)
+
+        if (elements.registerBtn) {
+            elements.registerBtn.addEventListener('click', async () => {
+            hideMessage();
+            
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const firstName = document.getElementById('regFirstName').value;
+            const lastName = document.getElementById('regLastName').value;
+
+            if (!email || !password || !confirmPassword || !firstName || !lastName) {
+                showMessage('Заполните все поля');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage('Пароли не совпадают');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Пароль должен быть не менее 6 символов');
+                return;
+            }
+
+            showLoading(elements.registerBtn, elements.registerText, elements.registerLoading);
+
+            try {
+                await register(email, password, firstName, lastName);
+                showMessage('Регистрация выполнена успешно!', 'success');
+            } catch (error) {
+                showMessage(error.message);
+            } finally {
+                hideLoading(elements.registerBtn, elements.registerText, elements.registerLoading);
+            }
+        });
+        }
+
+        if (elements.completeRegistrationBtn) {
+            elements.completeRegistrationBtn.addEventListener('click', async () => {
+            hideMessage();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+
+            if (!firstName || !lastName) {
+                showMessage('Заполните имя и фамилию');
+                return;
+            }
+
+            showLoading(elements.completeRegistrationBtn, elements.completeText, elements.completeLoading);
+
+            try {
+                await completeRegistration(email, password, firstName, lastName);
+                showMessage('Регистрация завершена успешно!', 'success');
+            } catch (error) {
+                showMessage(error.message);
+            } finally {
+                hideLoading(elements.completeRegistrationBtn, elements.completeText, elements.completeLoading);
+            }
+        });
+        }
+
+        // Обработчик восстановления пароля (перенесен в bindEventListeners)
+
+        // Остальные обработчики (перенесены в bindEventListeners)
+
+        // Все обработчики перенесены в bindEventListeners
+
+        // Проверка токена восстановления из URL
+        function checkResetToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (token) {
+                validateResetToken(token).then(result => {
+                    if (result.valid) {
+                        resetToken = token;
+                        showForm('resetPasswordForm');
+                        updateSteps(2);
+                        showMessage('Введите новый пароль', 'success');
+                    } else {
+                        showMessage('Ссылка восстановления недействительна или истекла');
+                        showForm('smartAuthForm');
+                        updateSteps(1);
+                    }
+                }).catch(error => {
+                    showMessage('Ошибка проверки ссылки восстановления');
+                    showForm('smartAuthForm');
+                    updateSteps(1);
+                });
+                return true; // Токен найден
+            }
+            return false; // Токен не найден
+        }
+
+        // Обработчик для кнопки "Отметить все как прочитанные"
+        if (document.getElementById('markAllReadBtn')) {
+            document.getElementById('markAllReadBtn').addEventListener('click', markAllNotificationsAsRead);
+        }
+
+        // Инициализация
+        async function init() {
+            // Проверяем, есть ли токен в URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const verifyEmailParam = urlParams.get('verify-email');
+            const referralCode = urlParams.get('ref');
+            const isEmailVerification = window.location.pathname.includes('/verify-email');
+            
+            console.log('🔍 Инициализация:', { token, verifyEmailParam, isEmailVerification, url: window.location.href });
+            
+            if ((verifyEmailParam && token) || (isEmailVerification && token)) {
+                // Если это токен подтверждения email
+                try {
+                    console.log('🔍 Подтверждаем email с токеном:', token);
+                    const result = await verifyEmail(token);
+                    console.log('🔍 Результат подтверждения email:', result);
+                    showMessage(result.message, 'success');
+                    
+                    // Обновляем информацию о пользователе
+                    await getCurrentUser();
+                    showForm('userInfo');
+                    
+                    // Очищаем URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (error) {
+                    console.error('❌ Ошибка подтверждения email:', error);
+                    showMessage(error.message);
+                    showForm('smartAuthForm');
+                }
+            } else if (token) {
+                // Если есть токен восстановления пароля
+                try {
+                    console.log('🔍 Проверяем токен восстановления:', token);
+                    const result = await validateResetToken(token);
+                    console.log('🔍 Результат валидации:', result);
+                    if (result.valid) {
+                        resetToken = token;
+                        console.log('✅ Токен валидный, показываем форму восстановления');
+                        showForm('resetPasswordForm');
+                        updateSteps(2);
+                        showMessage('Введите новый пароль', 'success');
+                    } else {
+                        console.log('❌ Токен невалидный');
+                        showMessage('Ссылка восстановления недействительна или истекла');
+                        showForm('smartAuthForm');
+                        updateSteps(1);
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка проверки токена:', error);
+                    showMessage('Ошибка проверки ссылки восстановления');
+                    showForm('smartAuthForm');
+                    updateSteps(1);
+                }
+            } else {
+                console.log('🔍 Нет токена, проверяем авторизацию');
+                // Если нет токена, проверяем авторизацию
+                const user = await getCurrentUser();
+                if (user) {
+                    currentUser = user;
+                    await showUserInfo();
+                } else {
+                    showForm('smartAuthForm');
+                    updateSteps(1);
+                }
+            }
+
+            // Привязываем все обработчики событий
+            bindEventListeners();
+        }
+
+        // Привязка обработчиков событий
+        function bindEventListeners() {
+            console.log('🔍 bindEventListeners вызван');
+            
+            // Обработчик умной авторизации
+            if (elements.smartAuthBtn) {
+                console.log('🔍 Добавляем обработчик для smartAuthBtn');
+                elements.smartAuthBtn.addEventListener('click', async () => {
+                    console.log('🔍 Обработчик smartAuthBtn сработал!');
+                    hideMessage();
+                    
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+
+                    console.log('🔍 Email:', email, 'Password:', password);
+
+                    if (!email || !password) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    showLoading(elements.smartAuthBtn, elements.smartAuthText, elements.smartAuthLoading);
+
+                    try {
+                        console.log('🔍 Вызываем smartAuth...');
+                        // Получаем реферальный код из URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const referralCode = urlParams.get('ref');
+                        const result = await smartAuth(email, password, undefined, undefined, referralCode);
+                        
+                        if (result.needsAdditionalInfo) {
+                            // Нужны дополнительные данные
+                            showMessage(result.message, 'success');
+                            showForm('completeInfoForm');
+                            updateSteps(2);
+                            
+                            // Сохраняем данные пользователя для дополнения
+                            window.pendingUser = result.user;
+                        } else {
+                            // Полная авторизация
+                            showMessage(result.message, 'success');
+                        }
+                    } catch (error) {
+                        console.error('🔍 Ошибка авторизации:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.smartAuthBtn, elements.smartAuthText, elements.smartAuthLoading);
+                    }
+                });
+            }
+
+            // Обработчик дополнения информации
+            if (elements.completeInfoBtn) {
+                elements.completeInfoBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const firstName = document.getElementById('completeFirstName').value;
+                    const lastName = document.getElementById('completeLastName').value;
+
+                    if (!firstName || !lastName) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    showLoading(elements.completeInfoBtn, elements.completeInfoText, elements.completeInfoLoading);
+
+                    try {
+                        await completeUserInfo(window.pendingUser.id, firstName, lastName);
+                        showMessage('Информация дополнена успешно!', 'success');
+                    } catch (error) {
+                        console.error('🔍 Ошибка дополнения информации:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.completeInfoBtn, elements.completeInfoText, elements.completeInfoLoading);
+                    }
+                });
+            }
+
+            // Обработчик восстановления пароля
+            if (elements.forgotPasswordLink) {
+                elements.forgotPasswordLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('forgotPasswordForm');
+                    updateSteps(1);
+                });
+            }
+
+            // Обработчик входа через код с почты
+            if (elements.emailCodeLink) {
+                elements.emailCodeLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('emailCodeForm');
+                    updateSteps(1);
+                });
+            }
+
+            // Остальные обработчики...
+            if (elements.logoutBtn) {
+                elements.logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    currentUser = null;
+                    showForm('smartAuthForm');
+                    updateSteps(1);
+                    hideMessage();
+                });
+            }
+
+            if (elements.showRegisterLink) {
+                elements.showRegisterLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('registerForm');
+                });
+            }
+
+            if (elements.showLoginLink) {
+                elements.showLoginLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('smartAuthForm');
+                });
+            }
+
+            if (elements.backToLoginBtn) {
+                elements.backToLoginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('smartAuthForm');
+                });
+            }
+
+            if (elements.backToLoginFromCodeBtn) {
+                elements.backToLoginFromCodeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showForm('smartAuthForm');
+                });
+            }
+
+            // Обработчик отправки ссылки восстановления пароля
+            if (elements.sendResetBtn) {
+                elements.sendResetBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const email = document.getElementById('forgotEmail').value;
+
+                    if (!email) {
+                        showMessage('Введите email');
+                        return;
+                    }
+
+                    showLoading(elements.sendResetBtn, elements.sendResetText, elements.sendResetLoading);
+
+                    try {
+                        console.log('🔍 Отправляем запрос восстановления для:', email);
+                        await requestPasswordReset(email);
+                        showMessage('Ссылка для восстановления пароля отправлена на ваш email!', 'success');
+                        showForm('smartAuthForm');
+                        updateSteps(1);
+                    } catch (error) {
+                        console.error('❌ Ошибка отправки ссылки:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.sendResetBtn, elements.sendResetText, elements.sendResetLoading);
+                    }
+                });
+            }
+
+            // Обработчик отправки кода на email
+            if (elements.sendEmailCodeBtn) {
+                elements.sendEmailCodeBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const email = document.getElementById('emailCodeEmail').value;
+
+                    if (!email) {
+                        showMessage('Введите email');
+                        return;
+                    }
+
+                    showLoading(elements.sendEmailCodeBtn, elements.sendEmailCodeText, elements.sendEmailCodeLoading);
+
+                    try {
+                        console.log('🔍 Отправляем код на email:', email);
+                        await sendEmailCode(email);
+                        showMessage('Код подтверждения отправлен на ваш email!', 'success');
+                        // Показываем поля для ввода кода
+                        document.getElementById('codeInputGroup').style.display = 'block';
+                        document.getElementById('verifyEmailCodeBtn').style.display = 'block';
+                    } catch (error) {
+                        console.error('❌ Ошибка отправки кода:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.sendEmailCodeBtn, elements.sendEmailCodeText, elements.sendEmailCodeLoading);
+                    }
+                });
+            }
+
+            // Обработчик подтверждения кода
+            if (elements.verifyEmailCodeBtn) {
+                elements.verifyEmailCodeBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const email = document.getElementById('emailCodeEmail').value;
+                    const code = document.getElementById('emailCode').value;
+
+                    if (!email || !code) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    if (code.length !== 6) {
+                        showMessage('Код должен содержать 6 цифр');
+                        return;
+                    }
+
+                    showLoading(elements.verifyEmailCodeBtn, elements.verifyEmailCodeText, elements.verifyEmailCodeLoading);
+
+                    try {
+                        console.log('🔍 Подтверждаем код:', code, 'для email:', email);
+                        await verifyEmailCode(email, code);
+                        showMessage('Вход выполнен успешно!', 'success');
+                        // Перезагружаем страницу для обновления состояния
+                        location.reload();
+                    } catch (error) {
+                        console.error('❌ Ошибка подтверждения кода:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.verifyEmailCodeBtn, elements.verifyEmailCodeText, elements.verifyEmailCodeLoading);
+                    }
+                });
+            }
+
+            // Обработчик смены пароля
+            if (elements.resetPasswordBtn) {
+                elements.resetPasswordBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+
+                    if (!newPassword || !confirmPassword) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    if (newPassword !== confirmPassword) {
+                        showMessage('Пароли не совпадают');
+                        return;
+                    }
+
+                    if (newPassword.length < 6) {
+                        showMessage('Пароль должен быть не менее 6 символов');
+                        return;
+                    }
+
+                    showLoading(elements.resetPasswordBtn, elements.resetPasswordText, elements.resetPasswordLoading);
+
+                    try {
+                        console.log('🔍 Отправляем пароль:', newPassword, 'длина:', newPassword.length);
+                        await resetPassword(resetToken, newPassword);
+                        showMessage('Пароль успешно изменен! Теперь вы можете войти в систему.', 'success');
+                        showForm('smartAuthForm');
+                        updateSteps(1);
+                    } catch (error) {
+                        console.error('❌ Ошибка смены пароля:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.resetPasswordBtn, elements.resetPasswordText, elements.resetPasswordLoading);
+                    }
+                });
+            }
+
+            // Обработчик отправки SMS кода для привязки телефона
+            if (elements.sendPhoneCodeBtn) {
+                elements.sendPhoneCodeBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const phone = elements.phoneNumber.value;
+
+                    if (!phone) {
+                        showMessage('Введите номер телефона');
+                        return;
+                    }
+
+                    // Проверяем формат номера
+                    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+                    if (!phoneRegex.test(phone)) {
+                        showMessage('Номер телефона должен быть в международном формате (например: +79991234567)');
+                        return;
+                    }
+
+                    showLoading(elements.sendPhoneCodeBtn, elements.sendPhoneCodeText, elements.sendPhoneCodeLoading);
+
+                    try {
+                        const result = await sendPhoneVerificationCode(phone);
+                        showMessage(result.message, 'success');
+                        
+                        // Показываем форму ввода кода
+                        elements.phoneCodeForm.classList.remove('hidden');
+                        
+                        // Показываем код в консоли для тестирования
+                        if (result.verificationCode) {
+                            console.log(`📱 SMS код для ${phone}: ${result.verificationCode}`);
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка отправки SMS кода:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.sendPhoneCodeBtn, elements.sendPhoneCodeText, elements.sendPhoneCodeLoading);
+                    }
+                });
+            }
+
+            // Обработчик подтверждения SMS кода
+            if (elements.verifyPhoneCodeBtn) {
+                elements.verifyPhoneCodeBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const phone = elements.phoneNumber.value;
+                    const code = elements.phoneCode.value;
+
+                    if (!phone || !code) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    if (code.length < 4) {
+                        showMessage('Код должен содержать минимум 4 символа');
+                        return;
+                    }
+
+                    showLoading(elements.verifyPhoneCodeBtn, elements.verifyPhoneCodeText, elements.verifyPhoneCodeLoading);
+
+                    try {
+                        await verifyPhoneCode(phone, code);
+                        showMessage('Номер телефона успешно привязан!', 'success');
+                        
+                        // Скрываем форму ввода кода
+                        elements.phoneCodeForm.classList.add('hidden');
+                        
+                        // Очищаем поля
+                        elements.phoneNumber.value = '';
+                        elements.phoneCode.value = '';
+                        
+                        // Обновляем информацию о пользователе
+                        await showUserInfo();
+                    } catch (error) {
+                        console.error('❌ Ошибка подтверждения кода:', error);
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.verifyPhoneCodeBtn, elements.verifyPhoneCodeText, elements.verifyPhoneCodeLoading);
+                    }
+                });
+            }
+
+            // Обработчик отвязки телефона
+            if (elements.unbindPhoneBtn) {
+                elements.unbindPhoneBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    if (!confirm('Вы уверены, что хотите отвязать номер телефона?')) {
+                        return;
+                    }
+
+                    try {
+                        await unbindPhone();
+                        showMessage('Номер телефона отвязан!', 'success');
+                        
+                        // Обновляем информацию о пользователе
+                        await showUserInfo();
+                    } catch (error) {
+                        console.error('❌ Ошибка отвязки телефона:', error);
+                        showMessage(error.message);
+                    }
+                });
+            }
+
+            // Обработчик отправки письма подтверждения email
+            if (elements.sendEmailVerificationBtn) {
+                elements.sendEmailVerificationBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    try {
+                        const result = await sendEmailVerification(currentUser.email);
+                        showMessage(result.message, 'success');
+                        
+                        // Показываем токен в консоли для тестирования
+                        if (result.verificationToken) {
+                            console.log(`📧 Токен подтверждения для ${currentUser.email}: ${result.verificationToken}`);
+                            console.log(`🔗 Ссылка: http://localhost:3002/verify-email?token=${result.verificationToken}`);
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка отправки письма подтверждения:', error);
+                        showMessage(error.message);
+                    }
+                });
+            }
+
+            // Обработчик генерации реферальной ссылки
+            if (elements.generateReferralLinkBtn) {
+                elements.generateReferralLinkBtn.addEventListener('click', generateReferralLink);
+            }
+
+            // Обработчик создания организации
+            if (elements.createOrganizationBtn) {
+                elements.createOrganizationBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const name = document.getElementById('orgName').value;
+                    const slug = document.getElementById('orgSlug').value;
+
+                    if (!name || !slug) {
+                        showMessage('Заполните все поля');
+                        return;
+                    }
+
+                    showLoading(elements.createOrganizationBtn, elements.createOrganizationText, elements.createOrganizationLoading);
+
+                    try {
+                        await createOrganization(name, slug);
+                        document.getElementById('orgName').value = '';
+                        document.getElementById('orgSlug').value = '';
+                    } catch (error) {
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.createOrganizationBtn, elements.createOrganizationText, elements.createOrganizationLoading);
+                    }
+                });
+            }
+
+            // Обработчик создания команды
+            if (elements.createTeamBtn) {
+                elements.createTeamBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const name = document.getElementById('teamName').value;
+                    const description = document.getElementById('teamDescription').value;
+                    const organizationId = document.getElementById('teamOrganization').value;
+
+                    if (!name) {
+                        showMessage('Заполните название команды');
+                        return;
+                    }
+
+                    showLoading(elements.createTeamBtn, elements.createTeamText, elements.createTeamLoading);
+
+                    try {
+                        await createTeam(name, description, organizationId || null);
+                        document.getElementById('teamName').value = '';
+                        document.getElementById('teamDescription').value = '';
+                        document.getElementById('teamOrganization').value = '';
+                    } catch (error) {
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.createTeamBtn, elements.createTeamText, elements.createTeamLoading);
+                    }
+                });
+            }
+
+            // Обработчики для приглашений
+            if (elements.createInvitationBtn) {
+                elements.createInvitationBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const email = elements.invitationEmail.value;
+                    const firstName = elements.invitationFirstName.value;
+                    const lastName = elements.invitationLastName.value;
+                    const type = elements.invitationType.value;
+                    const teamId = elements.invitationTeam.value;
+                    const organizationId = elements.invitationOrganization.value;
+
+                    if (!email) {
+                        showMessage('Заполните email сотрудника');
+                        return;
+                    }
+
+                    if (type === 'team' && !teamId) {
+                        showMessage('Выберите команду');
+                        return;
+                    }
+
+                    if (type === 'organization' && !organizationId) {
+                        showMessage('Выберите организацию');
+                        return;
+                    }
+
+                    showLoading(elements.createInvitationBtn, elements.createInvitationText, elements.createInvitationLoading);
+
+                    try {
+                        const invitationData = {
+                            email,
+                            firstName: firstName || undefined,
+                            lastName: lastName || undefined,
+                            type,
+                            teamId: type === 'team' ? teamId : undefined,
+                            organizationId: type === 'organization' ? organizationId : undefined,
+                        };
+
+                        await createInvitation(invitationData);
+                        
+                        // Очищаем форму
+                        elements.invitationEmail.value = '';
+                        elements.invitationFirstName.value = '';
+                        elements.invitationLastName.value = '';
+                        elements.invitationTeam.value = '';
+                        elements.invitationOrganization.value = '';
+                    } catch (error) {
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.createInvitationBtn, elements.createInvitationText, elements.createInvitationLoading);
+                    }
+                });
+            }
+            
+            // Обработчик для внутренних приглашений
+            if (elements.createInternalInvitationBtn) {
+                elements.createInternalInvitationBtn.addEventListener('click', async () => {
+                    hideMessage();
+                    
+                    const email = elements.invitationEmail.value;
+                    const firstName = elements.invitationFirstName.value;
+                    const lastName = elements.invitationLastName.value;
+                    const type = elements.invitationType.value;
+                    const teamId = elements.invitationTeam.value;
+                    const organizationId = elements.invitationOrganization.value;
+
+                    if (!email) {
+                        showMessage('Заполните email сотрудника');
+                        return;
+                    }
+
+                    if (type === 'team' && !teamId) {
+                        showMessage('Выберите команду');
+                        return;
+                    }
+
+                    if (type === 'organization' && !organizationId) {
+                        showMessage('Выберите организацию');
+                        return;
+                    }
+
+                    showLoading(elements.createInternalInvitationBtn, elements.createInternalInvitationText, elements.createInternalInvitationLoading);
+
+                    try {
+                        const invitationData = {
+                            email,
+                            firstName: firstName || undefined,
+                            lastName: lastName || undefined,
+                            type,
+                            teamId: type === 'team' ? teamId : undefined,
+                            organizationId: type === 'organization' ? organizationId : undefined,
+                        };
+
+                        await createInternalInvitation(invitationData);
+                        
+                        // Очищаем форму
+                        elements.invitationEmail.value = '';
+                        elements.invitationFirstName.value = '';
+                        elements.invitationLastName.value = '';
+                        elements.invitationTeam.value = '';
+                        elements.invitationOrganization.value = '';
+                    } catch (error) {
+                        showMessage(error.message);
+                    } finally {
+                        hideLoading(elements.createInternalInvitationBtn, elements.createInternalInvitationText, elements.createInternalInvitationLoading);
+                    }
+                });
+            }
+
+            // Обработчик изменения типа приглашения
+            if (elements.invitationType) {
+                elements.invitationType.addEventListener('change', () => {
+                    const type = elements.invitationType.value;
+                    if (type === 'team') {
+                        elements.invitationTeamGroup.classList.remove('hidden');
+                        elements.invitationOrgGroup.classList.add('hidden');
+                        loadTeamsForInvitation();
+                    } else if (type === 'organization') {
+                        elements.invitationTeamGroup.classList.add('hidden');
+                        elements.invitationOrgGroup.classList.remove('hidden');
+                        loadOrganizationsForInvitation();
+                    }
+                });
+            }
+        }
+
+        // Запуск приложения после загрузки DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            // Небольшая задержка, чтобы все функции были определены
+            setTimeout(init, 100);
+        });
+    </script>
+</body>
+</html>

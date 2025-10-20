@@ -1,0 +1,3416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vselena - Дашборд</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 0.25rem 1rem;
+            border-radius: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: -1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #ff6b6b;
+            border-radius: 2px;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-role {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .content-header {
+            background: white;
+            padding: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .notification-btn:hover {
+            background: #f1f5f9;
+            color: #374151;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.users {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-icon.security {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .stat-icon.invitations {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .stat-icon.articles {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: #f8fafc;
+            padding: 1.5rem 2rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table td {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+
+        .table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .user-details h4 {
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-details p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            color: #374151;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        /* Search */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid #10b981;
+            z-index: 10000;
+            max-width: 400px;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left-color: #10b981;
+        }
+
+        .notification.error {
+            border-left-color: #ef4444;
+        }
+
+        .notification.warning {
+            border-left-color: #f59e0b;
+        }
+
+        /* Hidden sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        /* Settings Form Styles */
+        .settings-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input[readonly] {
+            background-color: #f9fafb;
+            color: #6b7280;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .text-muted {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .security-settings {
+            margin-top: 1rem;
+        }
+
+        .security-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .security-item:last-child {
+            border-bottom: none;
+        }
+
+        .security-info h3 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .security-info p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal form {
+            padding: 1.5rem;
+        }
+
+        .modal .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .modal .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .modal .form-group input,
+        .modal .form-group textarea,
+        .modal .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .modal .form-group input:focus,
+        .modal .form-group textarea:focus,
+        .modal .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal .form-group small {
+            display: block;
+            margin-top: 0.25rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .modal .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>Vselena</div>
+                </div>
+            </div>
+            <div class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <div class="nav-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    Дашборд
+                </a>
+                <a href="#" class="nav-item" data-section="knowledge">
+                    <div class="nav-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    База знаний
+                </a>
+                <a href="#" class="nav-item" data-section="users">
+                    <div class="nav-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    Сотрудники
+                </a>
+                <a href="#" class="nav-item" data-section="teams">
+                    <div class="nav-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    Команды
+                </a>
+                <a href="#" class="nav-item" data-section="organizations">
+                    <div class="nav-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    Организации
+                </a>
+                <a href="#" class="nav-item" data-section="support">
+                    <div class="nav-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    Поддержка
+                </a>
+                <a href="#" class="nav-item" data-section="statistics">
+                    <div class="nav-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    Статистика
+                </a>
+                <a href="#" class="nav-item" data-section="invitations" onclick="showSection('invitations'); return false;">
+                    <div class="nav-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    Приглашения
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <div class="nav-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    Настройки
+                </a>
+            </div>
+            
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-name" id="userName">Загрузка...</div>
+                <div class="user-role" id="userRole">Пользователь</div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Выйти
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1 class="page-title">Дашборд</h1>
+                <div class="header-actions">
+                    <button class="notification-btn" onclick="showNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <div class="notification-badge" id="notificationBadge"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-body">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section active">
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card fade-in-up">
+                            <div class="stat-header">
+                                <div class="stat-icon users">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="totalUsers">0</div>
+                                        <div class="stat-label" id="totalUsersLabel">Сотрудников в системе</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card fade-in-up">
+                            <div class="stat-header">
+                                <div class="stat-icon security">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="activeUsers">0</div>
+                                    <div class="stat-label" id="activeUsersLabel">Активных пользователей</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card fade-in-up">
+                            <div class="stat-header">
+                                <div class="stat-icon invitations">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="invitationsCount">0</div>
+                                    <div class="stat-label" id="invitationsLabel">Ожидающих приглашений</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card fade-in-up">
+                            <div class="stat-header">
+                                <div class="stat-icon articles">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="articles">0</div>
+                                    <div class="stat-label" id="articlesLabel">Статей в базе знаний</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card fade-in-up">
+                        <div class="card-header">
+                            <h2 class="card-title">Быстрые действия</h2>
+                        </div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="showSection('users')">
+                                <i class="fas fa-user-plus"></i>
+                                Пригласить сотрудника
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSection('teams')">
+                                <i class="fas fa-users"></i>
+                                Создать команду
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSection('organizations')">
+                                <i class="fas fa-building"></i>
+                                Создать организацию
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSection('knowledge')">
+                                <i class="fas fa-plus"></i>
+                                Создать статью
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="card fade-in-up">
+                        <div class="card-header">
+                            <h2 class="card-title">Последняя активность</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Пользователь</th>
+                                        <th>Действие</th>
+                                        <th>Время</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentActivityBody">
+                                    <tr>
+                                        <td>
+                                            <div class="user-info">
+                                                <div class="user-avatar">A</div>
+                                                <div class="user-details">
+                                                    <h4>Админ Системы</h4>
+                                                    <p>admin@vselena.ru</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>Вход в систему</td>
+                                        <td>Только что</td>
+                                        <td><span class="status-badge active">Успешно</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Сотрудники</h2>
+                            <button class="btn btn-primary" onclick="showInviteModal()">
+                                <i class="fas fa-user-plus"></i>
+                                Пригласить сотрудника
+                            </button>
+                        </div>
+                        
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchUserTab('active')">Активные</button>
+                            <button class="tab" onclick="switchUserTab('invited')">Приглашенные</button>
+                        </div>
+
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по имени, email, роли..." id="userSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Сотрудник</th>
+                                        <th>Роль</th>
+                                        <th>Команда</th>
+                                        <th>Статус</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teams Section -->
+                <div id="teams" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Команды</h2>
+                            <button class="btn btn-primary" onclick="showCreateTeamModal()">
+                                <i class="fas fa-plus"></i>
+                                Создать команду
+                            </button>
+                        </div>
+                        
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по названию команды..." id="teamSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Команда</th>
+                                        <th>Участники</th>
+                                        <th>Руководитель</th>
+                                        <th>Создана</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamsTableBody">
+                                    <!-- Teams will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organizations Section -->
+                <div id="organizations" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Организации</h2>
+                            <button class="btn btn-primary" onclick="showCreateOrgModal()">
+                                <i class="fas fa-plus"></i>
+                                Создать организацию
+                            </button>
+                        </div>
+                        
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по названию организации..." id="orgSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Организация</th>
+                                        <th>Команды</th>
+                                        <th>Сотрудники</th>
+                                        <th>Руководитель</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="organizationsTableBody">
+                                    <!-- Organizations will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Section -->
+                <div id="statistics" class="section">
+                    <div class="card">
+                        <h2 class="card-title">Статистика системы</h2>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon users">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsTotalUsers">0</div>
+                                        <div class="stat-label">Всего пользователей</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon security">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsActiveUsers">0</div>
+                                        <div class="stat-label">Активных сессий</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon invitations">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsInvitations">0</div>
+                                        <div class="stat-label">Приглашений отправлено</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon articles">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsArticles">0</div>
+                                        <div class="stat-label">Статей в базе знаний</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                                        <i class="fas fa-headset"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsTickets">0</div>
+                                        <div class="stat-label">Тикетов поддержки</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsAvgResponse">0ч</div>
+                                        <div class="stat-label">Среднее время ответа</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other sections -->
+                <div id="knowledge" class="section">
+                    <div class="card">
+                        <h2 class="card-title">База знаний</h2>
+                        <p>Раздел базы знаний будет здесь...</p>
+                    </div>
+                </div>
+
+                <div id="support" class="section">
+                    <div class="card">
+                        <h2 class="card-title">Поддержка</h2>
+                        <p>Раздел поддержки будет здесь...</p>
+                    </div>
+                </div>
+
+
+                <div id="invitations" class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Приглашения</h2>
+                            <button class="btn btn-primary" onclick="refreshInvitations()">
+                                <i class="fas fa-sync-alt"></i>
+                                Обновить
+                            </button>
+                        </div>
+                        
+                        <div id="invitationsContainer">
+                            <div class="loading-placeholder">Загрузка приглашений...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings" class="section">
+                    <div class="card">
+                        <h2 class="card-title">Настройки профиля</h2>
+                        <form id="settingsForm" class="settings-form">
+                            <div class="form-group">
+                                <label for="firstName">Имя</label>
+                                <input type="text" id="firstName" name="firstName" placeholder="Введите ваше имя">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lastName">Фамилия</label>
+                                <input type="text" id="lastName" name="lastName" placeholder="Введите вашу фамилию">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <div class="input-group">
+                                    <input type="email" id="email" name="email" readonly>
+                                    <button type="button" id="verifyEmailBtn" class="btn btn-outline">Подтвердить</button>
+                                </div>
+                                <small class="text-muted" id="emailStatus">Email не подтвержден</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="phone">Номер телефона</label>
+                                <div class="input-group">
+                                    <input type="tel" id="phone" name="phone" placeholder="+7 (999) 123-45-67">
+                                    <button type="button" id="verifyPhoneBtn" class="btn btn-outline">Подтвердить</button>
+                                </div>
+                                <small class="text-muted" id="phoneStatus">Телефон не подтвержден</small>
+                            </div>
+                            
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                                <button type="button" id="cancelSettings" class="btn btn-secondary">Отмена</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="card">
+                        <h2 class="card-title">Безопасность</h2>
+                        <div class="security-settings">
+                            <div class="security-item">
+                                <div class="security-info">
+                                    <h3>Двухфакторная аутентификация</h3>
+                                    <p>Дополнительная защита вашего аккаунта</p>
+                                </div>
+                                <div class="security-action">
+                                    <label class="switch">
+                                        <input type="checkbox" id="twoFactorEnabled">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Модальное окно создания организации -->
+    <div id="createOrgModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать организацию</h2>
+                <button class="modal-close" onclick="closeCreateOrgModal()">&times;</button>
+            </div>
+            <form id="createOrgForm" method="POST">
+                <div class="form-group">
+                    <label for="orgName">Название организации *</label>
+                    <input type="text" id="orgName" name="name" required placeholder="Введите название организации">
+                </div>
+                <div class="form-group">
+                    <label for="orgDescription">Описание</label>
+                    <textarea id="orgDescription" name="description" rows="3" placeholder="Описание организации (необязательно)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="orgSlug">URL-адрес *</label>
+                    <input type="text" id="orgSlug" name="slug" required placeholder="my-organization" pattern="[a-z0-9\-]+">
+                    <small>Только строчные буквы, цифры и дефисы. Будет использоваться в URL.</small>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="createOrgBtn">
+                        <span id="createOrgText">Создать организацию</span>
+                        <span id="createOrgLoading" class="loading hidden"></span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateOrgModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно создания команды -->
+    <div id="createTeamModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать команду</h2>
+                <button class="modal-close" onclick="closeCreateTeamModal()">&times;</button>
+            </div>
+            <form id="createTeamForm" method="POST">
+                <div class="form-group">
+                    <label for="teamName">Название команды *</label>
+                    <input type="text" id="teamName" name="name" required placeholder="Введите название команды">
+                </div>
+                <div class="form-group">
+                    <label for="teamDescription">Описание</label>
+                    <textarea id="teamDescription" name="description" rows="3" placeholder="Описание команды (необязательно)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="teamOrganization">Организация</label>
+                    <select id="teamOrganization" name="organizationId">
+                        <option value="">Без организации</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="createTeamBtn">
+                        <span id="createTeamText">Создать команду</span>
+                        <span id="createTeamLoading" class="loading hidden"></span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateTeamModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно приглашения пользователя -->
+    <div id="inviteUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Пригласить сотрудника</h2>
+                <button class="modal-close" onclick="closeInviteUserModal()">&times;</button>
+            </div>
+            <form id="inviteUserForm" method="POST">
+                <div class="form-group">
+                    <label for="inviteEmail">Email сотрудника *</label>
+                    <input type="email" id="inviteEmail" name="email" required placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="inviteType">Тип приглашения *</label>
+                    <select id="inviteType" name="type" required onchange="toggleInviteTarget()">
+                        <option value="">Выберите тип</option>
+                        <option value="organization">В организацию</option>
+                        <option value="team">В команду</option>
+                    </select>
+                </div>
+                <div class="form-group" id="inviteOrganizationGroup" style="display: none;">
+                    <label for="inviteOrganization">Организация *</label>
+                    <select id="inviteOrganization" name="organizationId">
+                        <option value="">Выберите организацию</option>
+                    </select>
+                </div>
+                <div class="form-group" id="inviteTeamGroup" style="display: none;">
+                    <label for="inviteTeam">Команда *</label>
+                    <select id="inviteTeam" name="teamId">
+                        <option value="">Выберите команду</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="inviteUserBtn">
+                        <span id="inviteUserText">Отправить приглашение</span>
+                        <span id="inviteUserLoading" class="loading hidden"></span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeInviteUserModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Редактировать сотрудника</h2>
+                <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+            </div>
+                        <form id="editUserForm" method="POST">
+                            <input type="hidden" id="editUserId" name="userId">
+                            <div class="form-group">
+                                <label for="editUserEmail">Email</label>
+                                <input type="email" id="editUserEmail" name="email" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="editUserTargetType">Тип назначения</label>
+                                <select id="editUserTargetType" name="targetType" onchange="toggleEditTarget()">
+                                    <option value="team">Команда</option>
+                                    <option value="organization">Организация</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="editUserTeamGroup">
+                                <label for="editUserTeam">Команда</label>
+                                <select id="editUserTeam" name="teamId">
+                                    <option value="">Выберите команду</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="editUserOrgGroup" style="display: none;">
+                                <label for="editUserOrganization">Организация</label>
+                                <select id="editUserOrganization" name="organizationId">
+                                    <option value="">Выберите организацию</option>
+                                </select>
+                            </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="editUserBtn">
+                        <span id="editUserText">Сохранить изменения</span>
+                        <span id="editUserLoading" class="loading hidden"></span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let authToken = null;
+        let currentUsersList = [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            
+            // Принудительно загружаем приглашения при загрузке страницы
+            setTimeout(() => {
+                console.log('Force loading invitations...');
+                loadInvitations();
+            }, 1000);
+        });
+
+        // Initialize application
+        async function initializeApp() {
+            // Check if user is logged in
+            authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // Load user data
+                await loadCurrentUser();
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Show welcome notification
+                showNotification('Добро пожаловать в систему!', 'success');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showNotification('Ошибка загрузки данных', 'error');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.dataset.section;
+                    showSection(section);
+                    
+                    // Update active nav item
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Search functionality
+            document.getElementById('userSearch')?.addEventListener('input', function() {
+                filterUsers(this.value);
+            });
+
+            document.getElementById('teamSearch')?.addEventListener('input', function() {
+                filterTeams(this.value);
+            });
+
+            document.getElementById('orgSearch')?.addEventListener('input', function() {
+                filterOrganizations(this.value);
+            });
+
+            
+            // Initialize settings
+            initializeSettings();
+            
+            // Initialize modals
+            initializeModals();
+        }
+
+        // Show section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active');
+                
+                // Update page title
+                const pageTitle = document.querySelector('.page-title');
+                const titles = {
+                    'dashboard': 'Дашборд',
+                    'knowledge': 'База знаний',
+                    'users': 'Сотрудники',
+                    'teams': 'Команды',
+                    'organizations': 'Организации',
+                    'support': 'Поддержка',
+                    'statistics': 'Статистика',
+                    'invitations': 'Приглашения',
+                    'settings': 'Настройки'
+                };
+                pageTitle.textContent = titles[sectionId] || 'Дашборд';
+            }
+
+            // Load section data
+            loadSectionData(sectionId);
+        }
+
+        // Load section data
+        async function loadSectionData(sectionId) {
+            switch(sectionId) {
+                case 'users':
+                    await loadUsers();
+                    break;
+                case 'teams':
+                    await loadTeams();
+                    break;
+                case 'organizations':
+                    await loadOrganizations();
+                    break;
+                case 'statistics':
+                    await loadStatistics();
+                    break;
+                case 'invitations':
+                    console.log('Loading invitations section...');
+                    await loadInvitations();
+                    // Принудительно показываем секцию
+                    const invitationsSection = document.getElementById('invitations');
+                    if (invitationsSection) {
+                        invitationsSection.style.display = 'block';
+                        invitationsSection.style.visibility = 'visible';
+                        invitationsSection.style.opacity = '1';
+                        invitationsSection.classList.add('active');
+                        console.log('Invitations section made visible');
+                    }
+                    break;
+                case 'settings':
+                    await loadSettings();
+                    break;
+            }
+        }
+
+        // Load current user
+        async function loadCurrentUser() {
+            try {
+                // Always load user data from API to get current user info
+                const response = await apiCall('/api/auth/me', { method: 'GET' });
+                currentUser = response;
+                
+                // Update localStorage with fresh user data
+                localStorage.setItem('userData', JSON.stringify(currentUser));
+                
+                // Update user info in sidebar
+                document.getElementById('userName').textContent = 
+                    `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email;
+                
+                // Get the highest priority role
+                const rolePriority = {
+                    'super_admin': 5,
+                    'admin': 4,
+                    'manager': 3,
+                    'editor': 2,
+                    'viewer': 1
+                };
+                
+                // Handle both array of role objects and array of role names
+                let roles = currentUser.roles || [];
+                if (roles.length > 0 && typeof roles[0] === 'string') {
+                    // If roles is array of strings, convert to objects
+                    roles = roles.map(roleName => ({ name: roleName }));
+                }
+                
+                const highestRole = roles.reduce((highest, current) => {
+                    const currentPriority = rolePriority[current.name] || 0;
+                    const highestPriority = rolePriority[highest?.name] || 0;
+                    return currentPriority > highestPriority ? current : highest;
+                }, null);
+                
+                document.getElementById('userRole').textContent = 
+                    highestRole?.name || 'Пользователь';
+                
+                // Update avatar
+                const avatar = document.getElementById('userAvatar');
+                const initials = (currentUser.firstName?.[0] || '') + (currentUser.lastName?.[0] || '');
+                if (initials) {
+                    avatar.textContent = initials;
+                } else {
+                    avatar.innerHTML = '<i class="fas fa-user"></i>';
+                }
+            } catch (error) {
+                console.error('Error loading current user:', error);
+                throw error;
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load statistics using the new function
+                await loadStatistics();
+
+                // Load recent activity
+                await loadRecentActivity();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                console.log('Loading team members...');
+                const response = await apiCall('/api/users/team-members', { method: 'GET' });
+                console.log('Team members response:', response);
+                const users = Array.isArray(response) ? response : (response.users || response.data || []);
+                console.log('Users array:', users);
+                displayUsers(users);
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                showNotification('Ошибка загрузки сотрудников команд', 'error');
+            }
+        }
+
+        // Display users
+        function displayUsers(users) {
+            console.log('Displaying users:', users);
+            const tbody = document.getElementById('usersTableBody');
+            console.log('Table body element:', tbody);
+            tbody.innerHTML = '';
+
+            // Сохраняем список пользователей для редактирования
+            currentUsersList = users;
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${user.firstName ? user.firstName[0] : user.email[0].toUpperCase()}
+                            </div>
+                            <div class="user-details">
+                                <h4>${user.firstName || ''} ${user.lastName || ''}</h4>
+                                <p>${user.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${user.roles?.[0]?.name || 'viewer'}</span>
+                    </td>
+                            <td>${user.teams && user.teams.length > 0 ? user.teams[0].name : 'Не назначена'}</td>
+                    <td>
+                        <span class="status-badge ${user.isActive ? 'active' : 'inactive'}">
+                            ${user.isActive ? 'Активен' : 'Неактивен'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editUser('${user.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load teams
+        async function loadTeams() {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                await displayTeams(response);
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        // Display teams
+        async function displayTeams(teams) {
+            const tbody = document.getElementById('teamsTableBody');
+            tbody.innerHTML = '';
+
+            for (const team of teams) {
+                // Загружаем участников команды
+                let membersCount = 0;
+                try {
+                    const membersResponse = await apiCall(`/api/teams/${team.id}/members`, { method: 'GET' });
+                    membersCount = membersResponse?.length || 0;
+                } catch (error) {
+                    console.error('Error loading team members:', error);
+                    membersCount = 0;
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="user-details">
+                                <h4>${team.name}</h4>
+                                <p>${team.description || 'Описание отсутствует'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${membersCount} участников</span>
+                    </td>
+                    <td>${team.creator?.firstName || ''} ${team.creator?.lastName || ''}</td>
+                    <td>${new Date(team.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editTeam('${team.id}')" title="Просмотр участников">
+                            <i class="fas fa-users"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteTeam('${team.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // Delete team
+        async function deleteTeam(teamId) {
+            if (!confirm('Вы уверены, что хотите удалить эту команду?')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/api/teams/${teamId}`, {
+                    method: 'DELETE'
+                });
+                
+                showNotification('Команда удалена успешно!', 'success');
+                await loadTeams();
+            } catch (error) {
+                console.error('Ошибка удаления команды:', error);
+                showNotification('Ошибка удаления команды: ' + error.message, 'error');
+            }
+        }
+
+        // Edit team
+        async function editTeam(teamId) {
+            try {
+                // Загружаем информацию о команде и её участниках
+                const [teamResponse, membersResponse] = await Promise.all([
+                    apiCall(`/api/teams/${teamId}`, { method: 'GET' }),
+                    apiCall(`/api/teams/${teamId}/members`, { method: 'GET' })
+                ]);
+
+                const team = teamResponse;
+                const members = membersResponse || [];
+
+                // Создаем модальное окно для отображения участников команды
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Участники команды: ${team.name}</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="members-list">
+                                ${members.length > 0 ? 
+                                    members.map(member => `
+                                        <div class="member-item">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="member-info">
+                                                <h4>${member.firstName || ''} ${member.lastName || ''}</h4>
+                                                <p>${member.email}</p>
+                                                <span class="status-badge ${member.isActive ? 'active' : 'inactive'}">
+                                                    ${member.isActive ? 'Активен' : 'Неактивен'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    `).join('') :
+                                    '<p>В команде пока нет участников</p>'
+                                }
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Закрыть</button>
+                        </div>
+                    </div>
+                `;
+
+                // Добавляем стили для модального окна
+                const style = document.createElement('style');
+                style.textContent = `
+                    .members-list {
+                        max-height: 400px;
+                        overflow-y: auto;
+                    }
+                    .member-item {
+                        display: flex;
+                        align-items: center;
+                        padding: 1rem;
+                        border-bottom: 1px solid #e5e7eb;
+                        gap: 1rem;
+                    }
+                    .member-item:last-child {
+                        border-bottom: none;
+                    }
+                    .member-info h4 {
+                        margin: 0 0 0.25rem 0;
+                        font-size: 1rem;
+                        font-weight: 600;
+                    }
+                    .member-info p {
+                        margin: 0 0 0.5rem 0;
+                        color: #6b7280;
+                        font-size: 0.875rem;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                document.body.appendChild(modal);
+                
+                // Показываем модальное окно
+                modal.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                showNotification('Ошибка загрузки участников команды', 'error');
+            }
+        }
+
+        // Load organizations
+        async function loadOrganizations() {
+            try {
+                const response = await apiCall('/api/organizations', { method: 'GET' });
+                displayOrganizations(response);
+            } catch (error) {
+                console.error('Error loading organizations:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        // Display organizations
+        function displayOrganizations(organizations) {
+            const tbody = document.getElementById('organizationsTableBody');
+            tbody.innerHTML = '';
+
+            organizations.forEach(org => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="user-details">
+                                <h4>${org.name}</h4>
+                                <p>${org.slug}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${org.teams?.length || 0} команд</span>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${org.members?.length || 0} сотрудников</span>
+                    </td>
+                    <td>${org.creator?.firstName || ''} ${org.creator?.lastName || ''}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editOrganization('${org.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteOrganization('${org.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Delete organization
+        async function deleteOrganization(organizationId) {
+            if (!confirm('Вы уверены, что хотите удалить эту организацию?')) {
+                return;
+            }
+
+            try {
+                await apiCall(`/api/organizations/${organizationId}`, {
+                    method: 'DELETE'
+                });
+                
+                showNotification('Организация удалена успешно!', 'success');
+                await loadOrganizations();
+            } catch (error) {
+                console.error('Ошибка удаления организации:', error);
+                showNotification('Ошибка удаления организации: ' + error.message, 'error');
+            }
+        }
+
+        // Edit organization
+        function editOrganization(organizationId) {
+            showNotification('Редактирование организации в разработке', 'info');
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                console.log('Loading statistics...');
+                // Load all data for statistics (only working endpoints)
+                const [teamMembers, teams, organizations, invitations] = await Promise.all([
+                    apiCall('/api/users/team-members', { method: 'GET' }).catch((err) => { console.error('Error loading team members:', err); return []; }),
+                    apiCall('/api/teams', { method: 'GET' }).catch((err) => { console.error('Error loading teams:', err); return []; }),
+                    apiCall('/api/organizations', { method: 'GET' }).catch((err) => { console.error('Error loading organizations:', err); return []; }),
+                    apiCall('/api/invitations/my', { method: 'GET' }).catch((err) => { console.error('Error loading invitations:', err); return []; })
+                ]);
+
+                console.log('Statistics data loaded:', { teamMembers, teams, organizations, invitations });
+
+                // Process data
+                const usersList = Array.isArray(teamMembers) ? teamMembers : (teamMembers?.users || teamMembers?.data || []);
+                const teamsList = Array.isArray(teams) ? teams : (teams?.teams || teams?.data || []);
+                const orgsList = Array.isArray(organizations) ? organizations : (organizations?.organizations || organizations?.data || []);
+                const invitationsList = Array.isArray(invitations) ? invitations : (invitations?.invitations || invitations?.data || []);
+
+                // Calculate real statistics
+                const totalUsers = usersList.length || 0;
+                const activeUsers = usersList.filter(u => u.isActive !== false).length || 0;
+                const totalTeams = teamsList.length || 0;
+                const totalOrganizations = orgsList.length || 0;
+                const pendingInvitations = invitationsList.filter(inv => inv.status === 'pending').length || 0;
+                const totalInvitations = invitationsList.length || 0;
+                
+                // If no team members, show total teams and organizations as meaningful stats
+                const displayUsers = totalUsers > 0 ? totalUsers : totalTeams;
+                const displayActiveUsers = activeUsers > 0 ? activeUsers : totalOrganizations;
+
+                        // Update statistics
+                        console.log('Updating statistics:', { totalUsers, activeUsers, pendingInvitations, totalTeams, totalInvitations, totalOrganizations });
+                        
+                        // Update main dashboard statistics
+                        const totalUsersEl = document.getElementById('totalUsers');
+                        const activeUsersEl = document.getElementById('activeUsers');
+                        const invitationsEl = document.getElementById('invitationsCount');
+                        const articlesEl = document.getElementById('articles');
+                        
+                        // Update additional statistics
+                        const statsTotalUsersEl = document.getElementById('statsTotalUsers');
+                        const statsActiveUsersEl = document.getElementById('statsActiveUsers');
+                        const statsInvitationsEl = document.getElementById('statsInvitations');
+                        const statsArticlesEl = document.getElementById('statsArticles');
+                        const statsTotalUsersLabelEl = document.getElementById('statsTotalUsersLabel');
+                        
+                        console.log('Statistics elements found:', { 
+                            totalUsersEl: !!totalUsersEl, 
+                            activeUsersEl: !!activeUsersEl, 
+                            invitationsEl: !!invitationsEl, 
+                            articlesEl: !!articlesEl,
+                            statsTotalUsersEl: !!statsTotalUsersEl, 
+                            statsActiveUsersEl: !!statsActiveUsersEl, 
+                            statsInvitationsEl: !!statsInvitationsEl, 
+                            statsArticlesEl: !!statsArticlesEl,
+                            statsTotalUsersLabelEl: !!statsTotalUsersLabelEl
+                        });
+                        
+                        // Update main dashboard statistics
+                        console.log('Updating main dashboard:', { displayUsers, displayActiveUsers, pendingInvitations, totalTeams });
+                        if (totalUsersEl) {
+                            totalUsersEl.textContent = displayUsers;
+                            console.log('Updated totalUsersEl to:', displayUsers);
+                        }
+                        if (activeUsersEl) {
+                            activeUsersEl.textContent = displayActiveUsers;
+                            console.log('Updated activeUsersEl to:', displayActiveUsers);
+                        }
+                        if (invitationsEl) {
+                            invitationsEl.textContent = pendingInvitations;
+                            console.log('Updated invitationsEl to:', pendingInvitations);
+                        }
+                        if (articlesEl) {
+                            articlesEl.textContent = totalTeams; // Using teams as articles placeholder
+                            console.log('Updated articlesEl to:', totalTeams);
+                        }
+                        
+                        // Update additional statistics
+                        if (statsTotalUsersEl) statsTotalUsersEl.textContent = displayUsers;
+                        if (statsActiveUsersEl) statsActiveUsersEl.textContent = displayActiveUsers;
+                        if (statsInvitationsEl) statsInvitationsEl.textContent = pendingInvitations;
+                        if (statsArticlesEl) statsArticlesEl.textContent = totalTeams; // Using teams as articles placeholder
+                        
+                        // Update labels dynamically for main dashboard
+                        const totalUsersLabelEl = document.getElementById('totalUsersLabel');
+                        if (totalUsersLabelEl) {
+                            totalUsersLabelEl.textContent = totalUsers > 0 ? 'Сотрудников в системе' : 'Команд в системе';
+                        }
+                        
+                        const activeUsersLabelEl = document.getElementById('activeUsersLabel');
+                        if (activeUsersLabelEl) {
+                            activeUsersLabelEl.textContent = activeUsers > 0 ? 'Активных пользователей' : 'Организаций в системе';
+                        }
+                        
+                        // Update labels dynamically for additional statistics
+                        if (statsTotalUsersLabelEl) {
+                            statsTotalUsersLabelEl.textContent = totalUsers > 0 ? 'Сотрудников в системе' : 'Команд в системе';
+                        }
+                        
+                        const statsActiveUsersLabelEl = document.getElementById('statsActiveUsersLabel');
+                        if (statsActiveUsersLabelEl) {
+                            statsActiveUsersLabelEl.textContent = activeUsers > 0 ? 'Активных пользователей' : 'Организаций в системе';
+                        }
+                
+                // Update additional stats if they exist
+                const statsTicketsEl = document.getElementById('statsTickets');
+                const statsAvgResponseEl = document.getElementById('statsAvgResponse');
+                if (statsTicketsEl) statsTicketsEl.textContent = totalInvitations; // Using invitations as tickets placeholder
+                if (statsAvgResponseEl) statsAvgResponseEl.textContent = totalOrganizations > 0 ? '1.5ч' : 'Н/Д'; // Dynamic based on data
+
+                // Update additional stats if elements exist
+                const statsContainer = document.getElementById('statistics');
+                if (statsContainer) {
+                    // Add more detailed statistics
+                    const additionalStats = `
+                        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
+                            <div class="stat-card" style="background: #F3F4F6; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${totalTeams}</div>
+                                <div style="color: #6B7280; margin-top: 4px;">Команд</div>
+                            </div>
+                            <div class="stat-card" style="background: #F3F4F6; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${totalOrganizations}</div>
+                                <div style="color: #6B7280; margin-top: 4px;">Организаций</div>
+                            </div>
+                            <div class="stat-card" style="background: #F3F4F6; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${totalInvitations}</div>
+                                <div style="color: #6B7280; margin-top: 4px;">Всего приглашений</div>
+                            </div>
+                            <div class="stat-card" style="background: #F3F4F6; padding: 20px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1F2937;">${pendingInvitations}</div>
+                                <div style="color: #6B7280; margin-top: 4px;">Ожидающих приглашений</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add additional stats to the statistics section
+                    const existingAdditional = statsContainer.querySelector('.additional-stats');
+                    if (existingAdditional) {
+                        existingAdditional.remove();
+                    }
+                    
+                    const additionalDiv = document.createElement('div');
+                    additionalDiv.className = 'additional-stats';
+                    additionalDiv.innerHTML = additionalStats;
+                    statsContainer.appendChild(additionalDiv);
+                }
+
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showNotification('Ошибка загрузки статистики', 'error');
+            }
+        }
+
+        // Switch user tab
+        function switchUserTab(tab) {
+            // Update tab styles
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Load appropriate data
+            if (tab === 'active') {
+                loadUsers();
+            } else if (tab === 'invited') {
+                loadInvitedUsers();
+            }
+        }
+
+        // Load invited users (invitations sent by current user)
+        async function loadInvitedUsers() {
+            try {
+                // Get invitations sent by current user
+                const response = await apiCall('/api/invitations/sent', { method: 'GET' });
+                console.log('Sent invitations response:', response);
+                displayInvitedUsers(response);
+            } catch (error) {
+                console.error('Error loading invited users:', error);
+                showNotification('Ошибка загрузки приглашенных пользователей', 'error');
+            }
+        }
+
+        // Display invited users
+        function displayInvitedUsers(invitations) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            // Handle different response formats
+            let invitationList = invitations;
+            if (invitations && typeof invitations === 'object' && !Array.isArray(invitations)) {
+                invitationList = invitations.invitations || invitations.data || invitations;
+            }
+
+            if (!invitationList || !Array.isArray(invitationList)) {
+                return;
+            }
+
+            invitationList.forEach(invitation => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${invitation.email[0].toUpperCase()}
+                            </div>
+                            <div class="user-details">
+                                <h4>${invitation.firstName || ''} ${invitation.lastName || ''}</h4>
+                                <p>${invitation.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge pending">Приглашен</span>
+                    </td>
+                    <td>${invitation.team?.name || invitation.organization?.name || 'Не назначено'}</td>
+                    <td>
+                        <span class="status-badge ${invitation.status === 'pending' ? 'pending' : invitation.status === 'accepted' ? 'active' : 'inactive'}">
+                            ${invitation.status === 'pending' ? 'Ожидает' : invitation.status === 'accepted' ? 'Принято' : 'Отклонено'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="resendInvitation('${invitation.id}')">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="cancelInvitation('${invitation.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Filter functions
+        function filterUsers(query) {
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function filterTeams(query) {
+            const rows = document.querySelectorAll('#teamsTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function filterOrganizations(query) {
+            const rows = document.querySelectorAll('#organizationsTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        // API call function
+        async function apiCall(endpoint, options = {}) {
+            const url = `http://localhost:3001${endpoint}`;
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            };
+
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Check if it's a 2FA requirement
+                    const errorData = await response.json().catch(() => ({}));
+                    if (errorData.message && errorData.message.includes('2FA')) {
+                        // 2FA required, redirect to login with 2FA
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('userData');
+                        window.location.href = 'index.html?require2fa=true';
+                        throw new Error('2FA required');
+                    } else {
+                        // Token expired, redirect to login
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('userData');
+                        window.location.href = 'index.html';
+                        throw new Error('Unauthorized');
+                    }
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Hide notification after 5 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => container.removeChild(notification), 300);
+            }, 5000);
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('userData');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Placeholder functions for actions
+        function editUser(userId) {
+            // Найти пользователя в текущем списке
+            const user = currentUsersList.find(u => u.id === userId);
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+
+            // Заполнить форму данными пользователя
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserEmail').value = user.email;
+
+            // Загрузить команды и организации для выбора
+            loadTeamsForEdit();
+            loadOrganizationsForEdit();
+
+            // Установить текущую команду пользователя (если есть)
+            if (user.teams && user.teams.length > 0) {
+                document.getElementById('editUserTargetType').value = 'team';
+                document.getElementById('editUserTeam').value = user.teams[0].id;
+                toggleEditTarget();
+            } else if (user.organization && user.organization.id) {
+                document.getElementById('editUserTargetType').value = 'organization';
+                document.getElementById('editUserOrganization').value = user.organization.id;
+                toggleEditTarget();
+            } else {
+                document.getElementById('editUserTargetType').value = 'team';
+                toggleEditTarget();
+            }
+
+            // Показать модальное окно
+            document.getElementById('editUserModal').style.display = 'block';
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                return;
+            }
+
+            try {
+                console.log('Deleting user:', userId);
+                await apiCall(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                showNotification('Пользователь удален успешно', 'success');
+                
+                // Перезагружаем список пользователей
+                await loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showNotification('Ошибка удаления пользователя: ' + error.message, 'error');
+            }
+        }
+
+        // Функции для модального окна редактирования пользователя
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        async function loadTeamsForEdit() {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                const teams = Array.isArray(response) ? response : (response.teams || response.data || []);
+                
+                const teamSelect = document.getElementById('editUserTeam');
+                teamSelect.innerHTML = '<option value="">Выберите команду</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams for edit:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        async function loadOrganizationsForEdit() {
+            try {
+                const response = await apiCall('/api/organizations', { method: 'GET' });
+                const organizations = Array.isArray(response) ? response : (response.organizations || response.data || []);
+                
+                const orgSelect = document.getElementById('editUserOrganization');
+                orgSelect.innerHTML = '<option value="">Выберите организацию</option>';
+                
+                organizations.forEach(org => {
+                    const option = document.createElement('option');
+                    option.value = org.id;
+                    option.textContent = org.name;
+                    orgSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading organizations for edit:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        function toggleEditTarget() {
+            const targetType = document.getElementById('editUserTargetType').value;
+            const teamGroup = document.getElementById('editUserTeamGroup');
+            const orgGroup = document.getElementById('editUserOrgGroup');
+            
+            if (targetType === 'team') {
+                teamGroup.style.display = 'block';
+                orgGroup.style.display = 'none';
+            } else {
+                teamGroup.style.display = 'none';
+                orgGroup.style.display = 'block';
+            }
+        }
+
+        async function saveUserChanges() {
+            const userId = document.getElementById('editUserId').value;
+            const targetType = document.getElementById('editUserTargetType').value;
+            const teamId = document.getElementById('editUserTeam').value;
+            const organizationId = document.getElementById('editUserOrganization').value;
+
+            if (!userId) {
+                showNotification('Ошибка: ID пользователя не найден', 'error');
+                return;
+            }
+
+            if (targetType === 'team' && !teamId) {
+                showNotification('Выберите команду', 'error');
+                return;
+            }
+
+            if (targetType === 'organization' && !organizationId) {
+                showNotification('Выберите организацию', 'error');
+                return;
+            }
+
+            try {
+                showLoading('editUserBtn', 'editUserText', 'editUserLoading');
+
+                if (targetType === 'team' && teamId) {
+                    // Обновляем команду пользователя
+                    console.log('Updating user team:', userId, teamId);
+                    await apiCall(`/api/users/${userId}/team`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ teamId })
+                    });
+                } else if (targetType === 'organization' && organizationId) {
+                    // Обновляем организацию пользователя
+                    console.log('Updating user organization:', userId, organizationId);
+                    await apiCall(`/api/users/${userId}/organization`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ organizationId })
+                    });
+                }
+
+                hideLoading('editUserBtn', 'editUserText', 'editUserLoading');
+                showNotification('Изменения сохранены успешно', 'success');
+                closeEditUserModal();
+                
+                // Перезагружаем список пользователей
+                console.log('Reloading users after change...');
+                await loadUsers();
+            } catch (error) {
+                hideLoading('editUserBtn', 'editUserText', 'editUserLoading');
+                console.error('Error saving user changes:', error);
+                showNotification('Ошибка сохранения изменений: ' + error.message, 'error');
+            }
+        }
+
+
+        function editOrganization(orgId) {
+            showNotification('Функция редактирования организации в разработке', 'warning');
+        }
+
+        function resendInvitation(invitationId) {
+            showNotification('Приглашение отправлено повторно', 'success');
+        }
+
+        function showInviteModal() {
+            document.getElementById('inviteUserModal').style.display = 'block';
+            // Очистить форму
+            document.getElementById('inviteUserForm').reset();
+            // Загрузить список организаций и команд
+            loadOrganizationsForInvite();
+            loadTeamsForInvite();
+        }
+
+        function closeInviteUserModal() {
+            document.getElementById('inviteUserModal').style.display = 'none';
+        }
+
+        function showCreateTeamModal() {
+            document.getElementById('createTeamModal').style.display = 'block';
+            // Очистить форму
+            document.getElementById('createTeamForm').reset();
+            // Загрузить список организаций
+            loadOrganizationsForTeam();
+        }
+
+        function showCreateOrgModal() {
+            document.getElementById('createOrgModal').style.display = 'block';
+            // Очистить форму
+            document.getElementById('createOrgForm').reset();
+        }
+
+        function closeCreateOrgModal() {
+            document.getElementById('createOrgModal').style.display = 'none';
+        }
+
+        function showNotifications() {
+            showNotification('Уведомления в разработке', 'info');
+        }
+
+        // Initialize modals
+        function initializeModals() {
+            // Organization creation form
+            document.getElementById('createOrgForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await createOrganization();
+            });
+
+            // Team creation form
+            document.getElementById('createTeamForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await createTeam();
+            });
+
+            // Invite user form
+            document.getElementById('inviteUserForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await sendInvitation();
+            });
+
+            // Edit user form
+            document.getElementById('editUserForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveUserChanges();
+            });
+
+            // Close modals when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+        }
+
+        // Create organization
+        async function createOrganization() {
+            const formData = {
+                name: document.getElementById('orgName').value,
+                description: document.getElementById('orgDescription').value,
+                slug: document.getElementById('orgSlug').value
+            };
+
+            const createBtn = document.getElementById('createOrgBtn');
+            const createText = document.getElementById('createOrgText');
+            const createLoading = document.getElementById('createOrgLoading');
+
+            try {
+                showLoading('createOrgBtn', 'createOrgText', 'createOrgLoading');
+
+                const response = await apiCall('/api/organizations', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                if (response) {
+                    showNotification('Организация создана успешно!', 'success');
+                    closeCreateOrgModal();
+                    // Reload organizations if we're on that page
+                    const organizationsSection = document.getElementById('organizations');
+                    if (organizationsSection && organizationsSection.style.display !== 'none') {
+                        await loadOrganizations();
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка создания организации:', error);
+                showNotification('Ошибка создания организации: ' + error.message, 'error');
+            } finally {
+                hideLoading('createOrgBtn', 'createOrgText', 'createOrgLoading');
+            }
+        }
+
+        // Create team
+        async function createTeam() {
+            const formData = {
+                name: document.getElementById('teamName').value,
+                description: document.getElementById('teamDescription').value,
+                organizationId: document.getElementById('teamOrganization').value
+            };
+
+            const createBtn = document.getElementById('createTeamBtn');
+            const createText = document.getElementById('createTeamText');
+            const createLoading = document.getElementById('createTeamLoading');
+
+            try {
+                showLoading('createTeamBtn', 'createTeamText', 'createTeamLoading');
+
+                const response = await apiCall('/api/teams', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                if (response) {
+                    showNotification('Команда создана успешно!', 'success');
+                    closeCreateTeamModal();
+                    // Reload teams if we're on that page
+                    const teamsSection = document.getElementById('teams');
+                    if (teamsSection && teamsSection.style.display !== 'none') {
+                        await loadTeams();
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка создания команды:', error);
+                showNotification('Ошибка создания команды: ' + error.message, 'error');
+            } finally {
+                hideLoading('createTeamBtn', 'createTeamText', 'createTeamLoading');
+            }
+        }
+
+        function closeCreateTeamModal() {
+            document.getElementById('createTeamModal').style.display = 'none';
+        }
+
+        // Load organizations for team creation
+        async function loadOrganizationsForTeam() {
+            try {
+                const response = await apiCall('/api/organizations', { method: 'GET' });
+                const select = document.getElementById('teamOrganization');
+                select.innerHTML = '<option value="">Без организации</option>';
+                
+                // Handle both array and object responses
+                const organizations = Array.isArray(response) ? response : (response?.organizations || []);
+                
+                if (organizations && Array.isArray(organizations)) {
+                    organizations.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки организаций:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        // Load organizations for invite
+        async function loadOrganizationsForInvite() {
+            try {
+                const response = await apiCall('/api/organizations', { method: 'GET' });
+                const select = document.getElementById('inviteOrganization');
+                select.innerHTML = '<option value="">Выберите организацию</option>';
+                
+                // Handle both array and object responses
+                const organizations = Array.isArray(response) ? response : (response?.organizations || []);
+                
+                if (organizations && Array.isArray(organizations)) {
+                    organizations.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки организаций:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        // Load teams for invite
+        async function loadTeamsForInvite() {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                const select = document.getElementById('inviteTeam');
+                select.innerHTML = '<option value="">Выберите команду</option>';
+                
+                // Handle both array and object responses
+                const teams = Array.isArray(response) ? response : (response?.teams || []);
+                
+                if (teams && Array.isArray(teams)) {
+                    teams.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки команд:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        // Toggle invite target based on type
+        function toggleInviteTarget() {
+            const type = document.getElementById('inviteType').value;
+            const orgGroup = document.getElementById('inviteOrganizationGroup');
+            const teamGroup = document.getElementById('inviteTeamGroup');
+            
+            if (type === 'organization') {
+                orgGroup.style.display = 'block';
+                teamGroup.style.display = 'none';
+                document.getElementById('inviteOrganization').required = true;
+                document.getElementById('inviteTeam').required = false;
+            } else if (type === 'team') {
+                orgGroup.style.display = 'none';
+                teamGroup.style.display = 'block';
+                document.getElementById('inviteOrganization').required = false;
+                document.getElementById('inviteTeam').required = true;
+            } else {
+                orgGroup.style.display = 'none';
+                teamGroup.style.display = 'none';
+                document.getElementById('inviteOrganization').required = false;
+                document.getElementById('inviteTeam').required = false;
+            }
+        }
+
+        // Send invitation
+        async function sendInvitation() {
+            const email = document.getElementById('inviteEmail').value;
+            const targetType = document.getElementById('inviteType').value;
+
+            if (!email || !targetType) {
+                showNotification('Заполните все обязательные поля', 'error');
+                return;
+            }
+
+            // Проверяем, что пользователь не приглашает сам себя
+            const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
+            if (email === currentUser.email) {
+                showNotification('Вы не можете пригласить самого себя', 'error');
+                return;
+            }
+
+            const formData = {
+                email,
+                type: targetType
+            };
+
+            // Add target based on type
+            if (targetType === 'organization') {
+                const organizationId = document.getElementById('inviteOrganization').value;
+                if (!organizationId) {
+                    showNotification('Выберите организацию', 'error');
+                    return;
+                }
+                formData.organizationId = organizationId;
+            } else if (targetType === 'team') {
+                const teamId = document.getElementById('inviteTeam').value;
+                if (!teamId) {
+                    showNotification('Выберите команду', 'error');
+                    return;
+                }
+                formData.teamId = teamId;
+            }
+
+            try {
+                showLoading('inviteUserBtn', 'inviteUserText', 'inviteUserLoading');
+
+                const response = await apiCall('/api/invitations', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                if (response) {
+                    // Очищаем форму ПЕРЕД закрытием модального окна
+                    document.getElementById('inviteEmail').value = '';
+                    document.getElementById('inviteType').value = '';
+                    const teamGroup = document.getElementById('inviteTeamGroup');
+                    const orgGroup = document.getElementById('inviteOrgGroup');
+                    if (teamGroup) {
+                        document.getElementById('inviteTeam').value = '';
+                        teamGroup.style.display = 'none';
+                    }
+                    if (orgGroup) {
+                        document.getElementById('inviteOrganization').value = '';
+                        orgGroup.style.display = 'none';
+                    }
+                    
+                    showNotification('Приглашение отправлено успешно!', 'success');
+                    closeInviteUserModal();
+                }
+            } catch (error) {
+                console.error('Ошибка отправки приглашения:', error);
+                showNotification('Ошибка отправки приглашения: ' + error.message, 'error');
+            } finally {
+                hideLoading('inviteUserBtn', 'inviteUserText', 'inviteUserLoading');
+            }
+        }
+
+        // Load invitations
+        async function loadInvitations() {
+            console.log('loadInvitations called');
+            try {
+                const response = await apiCall('/api/invitations/my', { method: 'GET' });
+                console.log('Invitations response:', response);
+                console.log('Response type:', typeof response);
+                console.log('Response length:', response ? response.length : 'null');
+                displayInvitations(response);
+            } catch (error) {
+                console.error('Ошибка загрузки приглашений:', error);
+                document.getElementById('invitationsContainer').innerHTML = 
+                    '<p style="color: #EF4444; text-align: center; padding: 20px;">Ошибка загрузки приглашений</p>';
+            }
+        }
+
+        // Display invitations
+        function displayInvitations(invitations) {
+            console.log('displayInvitations called with:', invitations);
+            const container = document.getElementById('invitationsContainer');
+            console.log('Container found:', !!container);
+            
+            // Handle different response formats
+            let invitationList = invitations;
+            if (invitations && typeof invitations === 'object' && !Array.isArray(invitations)) {
+                // If it's an object, try to extract the array
+                invitationList = invitations.invitations || invitations.data || invitations;
+            }
+            
+            console.log('Processed invitationList:', invitationList);
+            console.log('Is array:', Array.isArray(invitationList));
+            console.log('Length:', invitationList ? invitationList.length : 'null');
+            
+            if (!invitationList || !Array.isArray(invitationList) || invitationList.length === 0) {
+                console.log('No invitations found, showing empty state');
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6B7280;">
+                        <i class="fas fa-envelope-open" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <h3>Нет приглашений</h3>
+                        <p>У вас пока нет приглашений в организации или команды</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            console.log('Rendering invitations...');
+            // Принудительно показываем контейнер
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+
+            container.innerHTML = invitationList.map(invitation => `
+                <div class="invitation-item" style="
+                    border: 1px solid #E5E7EB;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 16px;
+                    background: #F9FAFB;
+                    transition: all 0.3s ease;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="margin: 0 0 8px 0; color: #1F2937; font-size: 1.1rem;">
+                                ${invitation.type === 'organization' ? 'Организация' : 'Команда'}: ${invitation.targetName || (invitation.teamId ? 'Команда назначена' : 'Не назначено')}
+                            </h3>
+                            <p style="margin: 0; color: #6B7280; font-size: 0.9rem;">
+                                Приглашение от: ${invitation.inviterName || invitation.inviterEmail}
+                            </p>
+                        </div>
+                        <span class="status-badge ${getInvitationStatusClass(invitation.status)}">
+                            ${getInvitationStatusText(invitation.status)}
+                        </span>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <p style="margin: 0; color: #374151; line-height: 1.5;">
+                            ${invitation.message || 'Приглашение в ' + (invitation.type === 'organization' ? 'организацию' : 'команду')}
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 0.875rem; color: #6B7280;">
+                            <i class="fas fa-clock"></i>
+                            ${new Date(invitation.createdAt).toLocaleDateString('ru-RU', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </div>
+                        
+                        ${invitation.status === 'pending' ? `
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-success btn-sm" onclick="respondToInvitation('${invitation.id}', 'accepted')">
+                                    <i class="fas fa-check"></i>
+                                    Принять
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="respondToInvitation('${invitation.id}', 'declined')">
+                                    <i class="fas fa-times"></i>
+                                    Отклонить
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="cancelInvitation('${invitation.id}')">
+                                    <i class="fas fa-ban"></i>
+                                    Отменить
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get invitation status class
+        function getInvitationStatusClass(status) {
+            switch (status) {
+                case 'pending': return 'pending';
+                case 'accepted': return 'active';
+                case 'declined': return 'inactive';
+                case 'expired': return 'inactive';
+                default: return 'inactive';
+            }
+        }
+
+        // Get invitation status text
+        function getInvitationStatusText(status) {
+            switch (status) {
+                case 'pending': return 'Ожидает ответа';
+                case 'accepted': return 'Принято';
+                case 'declined': return 'Отклонено';
+                case 'expired': return 'Истекло';
+                default: return 'Неизвестно';
+            }
+        }
+
+        // Respond to invitation
+        async function respondToInvitation(invitationId, response) {
+            try {
+                // Используем правильные endpoints для принятия/отклонения приглашения
+                const endpoint = response === 'accepted' 
+                    ? `/api/invitations/accept-notification/${invitationId}`
+                    : `/api/invitations/decline-notification/${invitationId}`;
+
+                await apiCall(endpoint, {
+                    method: 'POST'
+                });
+
+                const actionText = response === 'accepted' ? 'принято' : 'отклонено';
+                showNotification(`Приглашение ${actionText}`, 'success');
+                
+                // Reload invitations
+                await loadInvitations();
+            } catch (error) {
+                console.error('Ошибка ответа на приглашение:', error);
+                showNotification('Ошибка ответа на приглашение: ' + error.message, 'error');
+            }
+        }
+
+        // Cancel invitation
+        async function cancelInvitation(invitationId) {
+            if (!confirm('Вы уверены, что хотите отменить это приглашение?')) {
+                return;
+            }
+
+            try {
+                console.log('Cancelling invitation:', invitationId);
+                await apiCall(`/api/invitations/${invitationId}`, {
+                    method: 'DELETE'
+                });
+
+                showNotification('Приглашение отменено', 'success');
+                
+                // Reload invitations
+                await loadInvitations();
+            } catch (error) {
+                console.error('Ошибка отмены приглашения:', error);
+                showNotification('Ошибка отмены приглашения: ' + error.message, 'error');
+            }
+        }
+
+        // Refresh invitations
+        function refreshInvitations() {
+            loadInvitations();
+        }
+
+        // Show loading state
+        function showLoading(buttonId, textId, loadingId) {
+            const button = document.getElementById(buttonId);
+            const text = document.getElementById(textId);
+            const loading = document.getElementById(loadingId);
+            
+            if (button) button.disabled = true;
+            if (text) text.classList.add('hidden');
+            if (loading) loading.classList.remove('hidden');
+        }
+
+        // Hide loading state
+        function hideLoading(buttonId, textId, loadingId) {
+            const button = document.getElementById(buttonId);
+            const text = document.getElementById(textId);
+            const loading = document.getElementById(loadingId);
+            
+            if (button) button.disabled = false;
+            if (text) text.classList.remove('hidden');
+            if (loading) loading.classList.add('hidden');
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                // Load recent data from working sources only
+                const [teamMembers, invitations] = await Promise.all([
+                    apiCall('/api/users/team-members', { method: 'GET' }).catch(() => []),
+                    apiCall('/api/invitations/my', { method: 'GET' }).catch(() => [])
+                ]);
+
+                const usersList = Array.isArray(teamMembers) ? teamMembers : (teamMembers?.users || teamMembers?.data || []);
+                const invitationsList = Array.isArray(invitations) ? invitations : (invitations?.invitations || invitations?.data || []);
+
+                // Create activity items
+                const activities = [];
+
+                // Add recent user activities
+                usersList.slice(0, 3).forEach(user => {
+                    activities.push({
+                        user: user,
+                        action: 'Активен в системе',
+                        time: user.updatedAt || user.createdAt,
+                        status: 'success',
+                        type: 'activity'
+                    });
+                });
+
+                // Add recent invitation activities
+                invitationsList.slice(0, 2).forEach(invitation => {
+                    activities.push({
+                        user: { firstName: invitation.inviterName?.split(' ')[0] || 'Пользователь', lastName: invitation.inviterName?.split(' ')[1] || '', email: invitation.inviterEmail },
+                        action: `Приглашение в ${invitation.type === 'organization' ? 'организацию' : 'команду'}`,
+                        time: invitation.createdAt,
+                        status: invitation.status === 'pending' ? 'warning' : (invitation.status === 'accepted' ? 'success' : 'error'),
+                        type: 'invitation'
+                    });
+                });
+
+                // Add recent notification activities (placeholder - notifications not implemented yet)
+                // notificationsList.slice(0, 2).forEach(notification => {
+                //     activities.push({
+                //         user: currentUser,
+                //         action: notification.title || 'Новое уведомление',
+                //         time: notification.createdAt,
+                //         status: notification.isRead ? 'success' : 'warning',
+                //         type: 'notification'
+                //     });
+                // });
+
+                // Sort by time (most recent first)
+                activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+                // Display activities
+                displayRecentActivity(activities.slice(0, 5)); // Show only 5 most recent
+
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+                // Show placeholder if error
+                displayRecentActivity([]);
+            }
+        }
+
+        // Display recent activity
+        function displayRecentActivity(activities) {
+            const tbody = document.getElementById('recentActivityBody');
+            
+            if (!activities || activities.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 20px; color: #6B7280;">
+                            <i class="fas fa-clock" style="font-size: 24px; margin-bottom: 8px; opacity: 0.5;"></i>
+                            <div>Нет недавней активности</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = activities.map(activity => {
+                const user = activity.user;
+                const initials = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
+                const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+                const timeAgo = getTimeAgo(activity.time);
+                const statusClass = getActivityStatusClass(activity.status);
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">${initials || 'U'}</div>
+                                <div class="user-details">
+                                    <h4>${fullName}</h4>
+                                    <p>${user.email || ''}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${activity.action}</td>
+                        <td>${timeAgo}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${getActivityStatusText(activity.status)}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Get time ago string
+        function getTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+            if (diffInMinutes < 1) return 'Только что';
+            if (diffInMinutes < 60) return `${diffInMinutes} мин назад`;
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours} ч назад`;
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) return `${diffInDays} дн назад`;
+            
+            return date.toLocaleDateString('ru-RU');
+        }
+
+        // Get activity status class
+        function getActivityStatusClass(status) {
+            switch (status) {
+                case 'success': return 'active';
+                case 'warning': return 'pending';
+                case 'error': return 'inactive';
+                default: return 'inactive';
+            }
+        }
+
+        // Get activity status text
+        function getActivityStatusText(status) {
+            switch (status) {
+                case 'success': return 'Успешно';
+                case 'warning': return 'В ожидании';
+                case 'error': return 'Ошибка';
+                default: return 'Неизвестно';
+            }
+        }
+
+
+        // Load settings
+        async function loadSettings() {
+            try {
+                const response = await apiCall('/api/auth/me', { method: 'GET' });
+                const user = response;
+                
+                // Fill form with current user data
+                document.getElementById('firstName').value = user.firstName || '';
+                document.getElementById('lastName').value = user.lastName || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('phone').value = user.phone || '';
+                
+                // Update status indicators
+                const emailStatus = document.getElementById('emailStatus');
+                const phoneStatus = document.getElementById('phoneStatus');
+                
+                if (user.emailVerified) {
+                    emailStatus.textContent = 'Email подтвержден';
+                    emailStatus.style.color = '#10b981';
+                } else {
+                    emailStatus.textContent = 'Email не подтвержден';
+                    emailStatus.style.color = '#ef4444';
+                }
+                
+                if (user.phoneVerified) {
+                    phoneStatus.textContent = 'Телефон подтвержден';
+                    phoneStatus.style.color = '#10b981';
+                } else {
+                    phoneStatus.textContent = 'Телефон не подтвержден';
+                    phoneStatus.style.color = '#ef4444';
+                }
+                
+                // Set security settings
+                document.getElementById('twoFactorEnabled').checked = user.twoFactorEnabled || false;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки настроек:', error);
+                showNotification('Ошибка загрузки настроек', 'error');
+            }
+        }
+
+        // Initialize settings event listeners
+        function initializeSettings() {
+            // Settings form submission
+            document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveSettings();
+            });
+
+            // Email verification
+            document.getElementById('verifyEmailBtn')?.addEventListener('click', async function() {
+                await verifyEmail();
+            });
+
+            // Phone verification
+            document.getElementById('verifyPhoneBtn')?.addEventListener('click', async function() {
+                await verifyPhone();
+            });
+
+            // Cancel settings
+            document.getElementById('cancelSettings')?.addEventListener('click', function() {
+                loadSettings(); // Reload original data
+            });
+
+            // Security settings toggles
+            document.getElementById('twoFactorEnabled')?.addEventListener('change', async function() {
+                await updateSecuritySetting('twoFactorEnabled', this.checked);
+            });
+        }
+
+        // Save settings
+        async function saveSettings() {
+            try {
+                const formData = {
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    phone: document.getElementById('phone').value
+                };
+
+                const response = await apiCall('/api/users/me', {
+                    method: 'PATCH',
+                    body: JSON.stringify(formData)
+                });
+
+                showNotification('Настройки сохранены', 'success');
+
+            } catch (error) {
+                console.error('Ошибка сохранения настроек:', error);
+                showNotification('Ошибка сохранения настроек: ' + error.message, 'error');
+            }
+        }
+
+        // Verify email
+        async function verifyEmail() {
+            try {
+                await apiCall('/api/auth/2fa/email/send-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: document.getElementById('email').value })
+                });
+                
+                showNotification('Код подтверждения отправлен на вашу почту', 'success');
+                
+                // Show verification dialog
+                const code = prompt('Введите код подтверждения, отправленный на вашу почту:');
+                if (code) {
+                    await verifyEmailCode(code);
+                }
+            } catch (error) {
+                console.error('Ошибка отправки кода:', error);
+                showNotification('Ошибка отправки кода: ' + error.message, 'error');
+            }
+        }
+
+        // Verify email code
+        async function verifyEmailCode(code) {
+            try {
+                await apiCall('/api/auth/2fa/email/verify-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        email: document.getElementById('email').value,
+                        code: code
+                    })
+                });
+                
+                showNotification('Email успешно подтвержден', 'success');
+                loadSettings(); // Reload to update status
+            } catch (error) {
+                console.error('Ошибка подтверждения email:', error);
+                showNotification('Ошибка подтверждения email: ' + error.message, 'error');
+            }
+        }
+
+        // Verify phone
+        async function verifyPhone() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                showNotification('Введите номер телефона', 'error');
+                return;
+            }
+
+            try {
+                // This would be implemented in backend
+                showNotification('Функция подтверждения телефона будет добавлена в следующих версиях', 'info');
+            } catch (error) {
+                console.error('Ошибка подтверждения телефона:', error);
+                showNotification('Ошибка подтверждения телефона: ' + error.message, 'error');
+            }
+        }
+
+        // Update security setting
+        async function updateSecuritySetting(setting, value) {
+            try {
+                if (setting === 'twoFactorEnabled') {
+                    if (value) {
+                        // Enable 2FA
+                        await apiCall('/api/two-factor-settings/enable', {
+                            method: 'POST',
+                            body: JSON.stringify({ methods: ['email'] })
+                        });
+                        showNotification('2FA включен', 'success');
+                    } else {
+                        // Disable 2FA
+                        await apiCall('/api/two-factor-settings/disable', {
+                            method: 'POST'
+                        });
+                        showNotification('2FA отключен', 'success');
+                    }
+                } else {
+                    // For other settings, use the general endpoint
+                    await apiCall('/api/users/me', {
+                        method: 'PATCH',
+                        body: JSON.stringify({ [setting]: value })
+                    });
+                    showNotification('Настройка обновлена', 'success');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления настройки:', error);
+                showNotification('Ошибка обновления настройки: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

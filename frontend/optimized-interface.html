@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vselena - Система управления знаниями</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 0.25rem 1rem;
+            border-radius: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .content-header {
+            background: white;
+            padding: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.users {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-icon.security {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .stat-icon.invitations {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: #f8fafc;
+            padding: 1.5rem 2rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table td {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+
+        .table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .user-details h4 {
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-details p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            color: #374151;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        /* Search */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+        }
+
+        /* Hidden sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>Vselena</div>
+                </div>
+            </div>
+            <div class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <div class="nav-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    Дашборд
+                </a>
+                <a href="#" class="nav-item" data-section="users">
+                    <div class="nav-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    Сотрудники
+                </a>
+                <a href="#" class="nav-item" data-section="teams">
+                    <div class="nav-icon">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    Команды
+                </a>
+                <a href="#" class="nav-item" data-section="organizations">
+                    <div class="nav-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    Организации
+                </a>
+                <a href="#" class="nav-item" data-section="statistics">
+                    <div class="nav-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    Статистика
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1 class="page-title">Дашборд</h1>
+                <p>Обзор системы управления знаниями и поддержкой</p>
+            </div>
+
+            <div class="content-body">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section active">
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon users">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="totalUsers">0</div>
+                                    <div class="stat-label">Сотрудников в системе</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon security">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="activeUsers">0</div>
+                                    <div class="stat-label">Активных пользователей</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon invitations">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <div class="stat-value" id="pendingInvitations">0</div>
+                                    <div class="stat-label">Ожидающих приглашений</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <h2 class="card-title">Быстрые действия</h2>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="showSection('users')">
+                                <i class="fas fa-user-plus"></i>
+                                Пригласить сотрудника
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSection('teams')">
+                                <i class="fas fa-users"></i>
+                                Создать команду
+                            </button>
+                            <button class="btn btn-secondary" onclick="showSection('organizations')">
+                                <i class="fas fa-building"></i>
+                                Создать организацию
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users" class="section">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 class="card-title">Сотрудники</h2>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i>
+                                Пригласить сотрудника
+                            </button>
+                        </div>
+                        
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchUserTab('active')">Активные</button>
+                            <button class="tab" onclick="switchUserTab('invited')">Приглашенные</button>
+                        </div>
+
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по имени, email, роли..." id="userSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Сотрудник</th>
+                                        <th>Роль</th>
+                                        <th>Команда</th>
+                                        <th>Статус</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teams Section -->
+                <div id="teams" class="section">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 class="card-title">Команды</h2>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Создать команду
+                            </button>
+                        </div>
+                        
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по названию команды..." id="teamSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Команда</th>
+                                        <th>Участники</th>
+                                        <th>Руководитель</th>
+                                        <th>Создана</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamsTableBody">
+                                    <!-- Teams will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organizations Section -->
+                <div id="organizations" class="section">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 class="card-title">Организации</h2>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Создать организацию
+                            </button>
+                        </div>
+                        
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Поиск по названию организации..." id="orgSearch">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Организация</th>
+                                        <th>Команды</th>
+                                        <th>Сотрудники</th>
+                                        <th>Руководитель</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="organizationsTableBody">
+                                    <!-- Organizations will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Section -->
+                <div id="statistics" class="section">
+                    <div class="card">
+                        <h2 class="card-title">Статистика системы</h2>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon users">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsTotalUsers">0</div>
+                                        <div class="stat-label">Всего пользователей</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon security">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsActiveUsers">0</div>
+                                        <div class="stat-label">Активных сессий</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon invitations">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsInvitations">0</div>
+                                        <div class="stat-label">Приглашений отправлено</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsArticles">0</div>
+                                        <div class="stat-label">Статей в базе знаний</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                                        <i class="fas fa-headset"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsTickets">0</div>
+                                        <div class="stat-label">Тикетов поддержки</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div>
+                                        <div class="stat-value" id="statsAvgResponse">0ч</div>
+                                        <div class="stat-label">Среднее время ответа</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let authToken = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        // Initialize application
+        async function initializeApp() {
+            // Check if user is logged in
+            authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                showLoginModal();
+                return;
+            }
+
+            try {
+                // Load user data
+                await loadCurrentUser();
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Show success notification
+                showNotification('Добро пожаловать в систему!', 'success');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showNotification('Ошибка загрузки данных', 'error');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.dataset.section;
+                    showSection(section);
+                    
+                    // Update active nav item
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Search functionality
+            document.getElementById('userSearch')?.addEventListener('input', function() {
+                filterUsers(this.value);
+            });
+
+            document.getElementById('teamSearch')?.addEventListener('input', function() {
+                filterTeams(this.value);
+            });
+
+            document.getElementById('orgSearch')?.addEventListener('input', function() {
+                filterOrganizations(this.value);
+            });
+        }
+
+        // Show section
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active');
+                
+                // Update page title
+                const pageTitle = document.querySelector('.page-title');
+                const titles = {
+                    'dashboard': 'Дашборд',
+                    'users': 'Сотрудники',
+                    'teams': 'Команды',
+                    'organizations': 'Организации',
+                    'statistics': 'Статистика'
+                };
+                pageTitle.textContent = titles[sectionId] || 'Дашборд';
+            }
+
+            // Load section data
+            loadSectionData(sectionId);
+        }
+
+        // Load section data
+        async function loadSectionData(sectionId) {
+            switch(sectionId) {
+                case 'users':
+                    await loadUsers();
+                    break;
+                case 'teams':
+                    await loadTeams();
+                    break;
+                case 'organizations':
+                    await loadOrganizations();
+                    break;
+                case 'statistics':
+                    await loadStatistics();
+                    break;
+            }
+        }
+
+        // Load current user
+        async function loadCurrentUser() {
+            try {
+                const response = await apiCall('/auth/me', { method: 'GET' });
+                currentUser = response;
+                console.log('Current user:', currentUser);
+            } catch (error) {
+                console.error('Error loading current user:', error);
+                throw error;
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load users count
+                const usersResponse = await apiCall('/users', { method: 'GET' });
+                document.getElementById('totalUsers').textContent = usersResponse.length || 0;
+                document.getElementById('activeUsers').textContent = usersResponse.filter(u => u.isActive).length || 0;
+
+                // Load invitations count
+                const invitationsResponse = await apiCall('/invitations', { method: 'GET' });
+                document.getElementById('pendingInvitations').textContent = invitationsResponse.filter(i => i.status === 'pending').length || 0;
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await apiCall('/users', { method: 'GET' });
+                displayUsers(response);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showNotification('Ошибка загрузки пользователей', 'error');
+            }
+        }
+
+        // Display users
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${user.firstName ? user.firstName[0] : user.email[0].toUpperCase()}
+                            </div>
+                            <div class="user-details">
+                                <h4>${user.firstName || ''} ${user.lastName || ''}</h4>
+                                <p>${user.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${user.roles?.[0]?.name || 'viewer'}</span>
+                    </td>
+                    <td>${user.team?.name || 'Не назначена'}</td>
+                    <td>
+                        <span class="status-badge ${user.isActive ? 'active' : 'inactive'}">
+                            ${user.isActive ? 'Активен' : 'Неактивен'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editUser('${user.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load teams
+        async function loadTeams() {
+            try {
+                const response = await apiCall('/teams', { method: 'GET' });
+                displayTeams(response);
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        // Display teams
+        function displayTeams(teams) {
+            const tbody = document.getElementById('teamsTableBody');
+            tbody.innerHTML = '';
+
+            teams.forEach(team => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="user-details">
+                                <h4>${team.name}</h4>
+                                <p>${team.description || 'Описание отсутствует'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${team.members?.length || 0} участников</span>
+                    </td>
+                    <td>${team.creator?.firstName || ''} ${team.creator?.lastName || ''}</td>
+                    <td>${new Date(team.createdAt).toLocaleDateString('ru-RU')}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editTeam('${team.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteTeam('${team.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load organizations
+        async function loadOrganizations() {
+            try {
+                const response = await apiCall('/organizations', { method: 'GET' });
+                displayOrganizations(response);
+            } catch (error) {
+                console.error('Error loading organizations:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        // Display organizations
+        function displayOrganizations(organizations) {
+            const tbody = document.getElementById('organizationsTableBody');
+            tbody.innerHTML = '';
+
+            organizations.forEach(org => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="user-details">
+                                <h4>${org.name}</h4>
+                                <p>${org.slug}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${org.teams?.length || 0} команд</span>
+                    </td>
+                    <td>
+                        <span class="status-badge active">${org.members?.length || 0} сотрудников</span>
+                    </td>
+                    <td>${org.creator?.firstName || ''} ${org.creator?.lastName || ''}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editOrganization('${org.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteOrganization('${org.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                // Load all data for statistics
+                const [users, teams, organizations, invitations] = await Promise.all([
+                    apiCall('/users', { method: 'GET' }),
+                    apiCall('/teams', { method: 'GET' }),
+                    apiCall('/organizations', { method: 'GET' }),
+                    apiCall('/invitations', { method: 'GET' })
+                ]);
+
+                // Update statistics
+                document.getElementById('statsTotalUsers').textContent = users.length || 0;
+                document.getElementById('statsActiveUsers').textContent = users.filter(u => u.isActive).length || 0;
+                document.getElementById('statsInvitations').textContent = invitations.length || 0;
+                document.getElementById('statsArticles').textContent = '0'; // Placeholder
+                document.getElementById('statsTickets').textContent = '0'; // Placeholder
+                document.getElementById('statsAvgResponse').textContent = '2ч'; // Placeholder
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showNotification('Ошибка загрузки статистики', 'error');
+            }
+        }
+
+        // Switch user tab
+        function switchUserTab(tab) {
+            // Update tab styles
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Load appropriate data
+            if (tab === 'active') {
+                loadUsers();
+            } else if (tab === 'invited') {
+                loadInvitedUsers();
+            }
+        }
+
+        // Load invited users
+        async function loadInvitedUsers() {
+            try {
+                const response = await apiCall('/invitations', { method: 'GET' });
+                displayInvitedUsers(response);
+            } catch (error) {
+                console.error('Error loading invited users:', error);
+                showNotification('Ошибка загрузки приглашенных пользователей', 'error');
+            }
+        }
+
+        // Display invited users
+        function displayInvitedUsers(invitations) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            invitations.forEach(invitation => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${invitation.email[0].toUpperCase()}
+                            </div>
+                            <div class="user-details">
+                                <h4>${invitation.firstName || ''} ${invitation.lastName || ''}</h4>
+                                <p>${invitation.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge pending">Приглашен</span>
+                    </td>
+                    <td>${invitation.team?.name || invitation.organization?.name || 'Не назначено'}</td>
+                    <td>
+                        <span class="status-badge ${invitation.status === 'pending' ? 'pending' : invitation.status === 'accepted' ? 'active' : 'inactive'}">
+                            ${invitation.status === 'pending' ? 'Ожидает' : invitation.status === 'accepted' ? 'Принято' : 'Отклонено'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="resendInvitation('${invitation.id}')">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="cancelInvitation('${invitation.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Filter functions
+        function filterUsers(query) {
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function filterTeams(query) {
+            const rows = document.querySelectorAll('#teamsTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function filterOrganizations(query) {
+            const rows = document.querySelectorAll('#organizationsTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        // API call function
+        async function apiCall(endpoint, options = {}) {
+            const url = `http://localhost:3001/api${endpoint}`;
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            };
+
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Token expired, redirect to login
+                    localStorage.removeItem('authToken');
+                    showLoginModal();
+                    throw new Error('Unauthorized');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            // Simple notification for now
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+
+        // Show login modal
+        function showLoginModal() {
+            // Redirect to login page
+            window.location.href = 'index.html';
+        }
+
+        // Placeholder functions for actions
+        function editUser(userId) {
+            showNotification('Функция редактирования пользователя в разработке', 'warning');
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                showNotification('Пользователь удален', 'success');
+            }
+        }
+
+        function editTeam(teamId) {
+            showNotification('Функция редактирования команды в разработке', 'warning');
+        }
+
+        function deleteTeam(teamId) {
+            if (confirm('Вы уверены, что хотите удалить эту команду?')) {
+                showNotification('Команда удалена', 'success');
+            }
+        }
+
+        function editOrganization(orgId) {
+            showNotification('Функция редактирования организации в разработке', 'warning');
+        }
+
+        function deleteOrganization(orgId) {
+            if (confirm('Вы уверены, что хотите удалить эту организацию?')) {
+                showNotification('Организация удалена', 'success');
+            }
+        }
+
+        function resendInvitation(invitationId) {
+            showNotification('Приглашение отправлено повторно', 'success');
+        }
+
+        function cancelInvitation(invitationId) {
+            if (confirm('Вы уверены, что хотите отменить это приглашение?')) {
+                showNotification('Приглашение отменено', 'success');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: vselena-db
+    environment:
+      POSTGRES_DB: vselena_dev
+      POSTGRES_USER: vselena
+      POSTGRES_PASSWORD: vselena_secret
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vselena-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vselena']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: vselena-backend
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: vselena
+      DB_PASSWORD: vselena_secret
+      DB_DATABASE: vselena_dev
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production-min-32-chars-long
+      JWT_REFRESH_SECRET: your-refresh-secret-key-min-32-chars-long-very-secure
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      FRONTEND_URL: http://localhost:3002
+      SWAGGER_ENABLED: true
+      # Email настройки (Yandex SMTP - работает в России)
+      SMTP_HOST: smtp.yandex.ru
+      SMTP_PORT: 587
+      SMTP_USER: KazakovVladislav2005@yandex.ru
+      SMTP_PASSWORD: butkyucfdciobznp
+      SMTP_FROM: KazakovVladislav2005@yandex.ru
+      # SMS настройки (SmsAero - бесплатные тесты)
+      SMSAERO_EMAIL: KazakovVladislav2005@yandex.ru
+      SMSAERO_API_KEY: 21092005
+      SMSAERO_FROM: Vselena
+      # Telegram Bot настройки (бесплатно)
+      TELEGRAM_BOT_TOKEN: 8232490271:AAEEvq-yBnFrv0AnSzF2dpFklVT7Wd8Xyyk
+      TELEGRAM_CHAT_ID: 1063129435
+      # SMS.ru (резерв)
+      SMSRU_API_ID: 1DAD7F88-2950-F76C-0354-ED1888146B19
+      SMSRU_FROM: SMS.RU
+      # 2FA настройки
+      TWO_FACTOR_CODE_EXPIRES_IN_MINUTES: 10
+      TWO_FACTOR_MAX_CODES_PER_HOUR: 5
+    ports:
+      - '3001:3001'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vselena-network
+    command: npm run start:dev
+    restart: unless-stopped
+
+  frontend:
+    image: node:18-alpine
+    container_name: vselena-frontend
+    working_dir: /app
+    ports:
+      - '3002:3000'
+    volumes:
+      - ../frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - vselena-network
+    command: npm start
+    restart: unless-stopped
+
+  # Adminer для управления БД (опционально)
+  adminer:
+    image: adminer:latest
+    container_name: vselena-adminer
+    ports:
+      - '8080:8080'
+    networks:
+      - vselena-network
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  vselena-network:
+    driver: bridge

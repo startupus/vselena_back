@@ -1,0 +1,1 @@
+SELECT id, email, "firstName", "lastName", status, "createdAt" FROM invitations ORDER BY "createdAt" DESC LIMIT 10;

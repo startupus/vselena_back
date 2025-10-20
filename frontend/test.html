@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vselena Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #3730A3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4F46E5;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Vselena Frontend Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>🔐 Тест умной авторизации</h2>
+        <p>Тестируем автоматическую регистрацию при попытке входа с несуществующим email</p>
+        <input type="email" id="testEmail" placeholder="test@example.com" value="smartuser@example.com">
+        <input type="password" id="testPassword" placeholder="password" value="testpass123">
+        <button class="test-button" onclick="testSmartAuth()">Тест умной авторизации</button>
+        <div id="smartAuthResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📧 Тест восстановления пароля</h2>
+        <p>Тестируем отправку ссылки для восстановления пароля</p>
+        <input type="email" id="resetEmail" placeholder="email@example.com" value="testuser@example.com">
+        <button class="test-button" onclick="testPasswordReset()">Тест восстановления пароля</button>
+        <div id="resetResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👤 Тест получения информации о пользователе</h2>
+        <p>Тестируем получение данных текущего пользователя</p>
+        <input type="text" id="userToken" placeholder="Access Token" value="">
+        <button class="test-button" onclick="testGetUser()">Получить данные пользователя</button>
+        <div id="userResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Тест всех API endpoints</h2>
+        <p>Автоматический тест всех основных функций</p>
+        <button class="test-button" onclick="runAllTests()">Запустить все тесты</button>
+        <div id="allTestsResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let currentToken = '';
+
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${url}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        function showResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.innerHTML = message;
+        }
+
+        async function testSmartAuth() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            try {
+                // Сначала пытаемся войти
+                const loginData = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+
+                showResult('smartAuthResult', `
+                    <strong>✅ Успешный вход!</strong><br>
+                    Email: ${loginData.user.email}<br>
+                    Token: ${loginData.accessToken.substring(0, 20)}...<br>
+                    Роли: ${loginData.user.roles ? loginData.user.roles.join(', ') : 'Нет ролей'}
+                `);
+                currentToken = loginData.accessToken;
+                document.getElementById('userToken').value = loginData.accessToken;
+
+            } catch (error) {
+                if (error.message.includes('401') || error.message.includes('Неверный')) {
+                    try {
+                        // Пытаемся зарегистрировать
+                        const registerData = await apiCall('/auth/register', {
+                            method: 'POST',
+                            body: JSON.stringify({ 
+                                email, 
+                                password,
+                                firstName: 'Тест',
+                                lastName: 'Пользователь'
+                            })
+                        });
+
+                        showResult('smartAuthResult', `
+                            <strong>🔄 Автоматическая регистрация!</strong><br>
+                            Email: ${registerData.email}<br>
+                            ID: ${registerData.id}<br>
+                            <em>Пользователь был автоматически зарегистрирован</em>
+                        `);
+
+                    } catch (registerError) {
+                        showResult('smartAuthResult', `
+                            <strong>❌ Ошибка регистрации:</strong><br>
+                            ${registerError.message}
+                        `, true);
+                    }
+                } else {
+                    showResult('smartAuthResult', `
+                        <strong>❌ Ошибка входа:</strong><br>
+                        ${error.message}
+                    `, true);
+                }
+            }
+        }
+
+        async function testPasswordReset() {
+            const email = document.getElementById('resetEmail').value;
+
+            try {
+                const result = await apiCall('/password-reset/forgot', {
+                    method: 'POST',
+                    body: JSON.stringify({ email })
+                });
+
+                showResult('resetResult', `
+                    <strong>✅ Запрос восстановления отправлен!</strong><br>
+                    ${result.message}<br>
+                    <em>Проверьте логи backend для получения ссылки</em>
+                `);
+
+            } catch (error) {
+                showResult('resetResult', `
+                    <strong>❌ Ошибка восстановления:</strong><br>
+                    ${error.message}
+                `, true);
+            }
+        }
+
+        async function testGetUser() {
+            const token = document.getElementById('userToken').value;
+
+            if (!token) {
+                showResult('userResult', `
+                    <strong>❌ Ошибка:</strong><br>
+                    Введите Access Token
+                `, true);
+                return;
+            }
+
+            try {
+                const user = await apiCall('/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                showResult('userResult', `
+                    <strong>✅ Данные пользователя получены!</strong><br>
+                    Email: ${user.email}<br>
+                    Organization ID: ${user.organizationId || 'Не указано'}<br>
+                    Team ID: ${user.teamId || 'Не указано'}<br>
+                    Роли: ${user.roles ? user.roles.join(', ') : 'Нет ролей'}<br>
+                    Права: ${user.permissions ? user.permissions.slice(0, 5).join(', ') + '...' : 'Нет прав'}
+                `);
+
+            } catch (error) {
+                showResult('userResult', `
+                    <strong>❌ Ошибка получения данных:</strong><br>
+                    ${error.message}
+                `, true);
+            }
+        }
+
+        async function runAllTests() {
+            const results = [];
+            
+            // Тест 1: Регистрация нового пользователя
+            try {
+                const registerData = await apiCall('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        email: 'autotest@example.com', 
+                        password: 'testpass123',
+                        firstName: 'Авто',
+                        lastName: 'Тест'
+                    })
+                });
+                results.push('✅ Регистрация: Успешно');
+                currentToken = registerData.accessToken;
+            } catch (error) {
+                results.push(`❌ Регистрация: ${error.message}`);
+            }
+
+            // Тест 2: Вход в систему
+            try {
+                const loginData = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        email: 'autotest@example.com', 
+                        password: 'testpass123'
+                    })
+                });
+                results.push('✅ Вход: Успешно');
+                currentToken = loginData.accessToken;
+            } catch (error) {
+                results.push(`❌ Вход: ${error.message}`);
+            }
+
+            // Тест 3: Получение данных пользователя
+            if (currentToken) {
+                try {
+                    const user = await apiCall('/auth/me', {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    });
+                    results.push('✅ Получение данных: Успешно');
+                } catch (error) {
+                    results.push(`❌ Получение данных: ${error.message}`);
+                }
+            }
+
+            // Тест 4: Восстановление пароля
+            try {
+                const resetData = await apiCall('/password-reset/forgot', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: 'autotest@example.com' })
+                });
+                results.push('✅ Восстановление пароля: Успешно');
+            } catch (error) {
+                results.push(`❌ Восстановление пароля: ${error.message}`);
+            }
+
+            // Тест 5: Получение ролей
+            try {
+                const roles = await apiCall('/roles', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                results.push(`✅ Получение ролей: Успешно (${roles.length} ролей)`);
+            } catch (error) {
+                results.push(`❌ Получение ролей: ${error.message}`);
+            }
+
+            // Тест 6: Получение прав
+            try {
+                const permissions = await apiCall('/permissions', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                results.push(`✅ Получение прав: Успешно (${permissions.length} прав)`);
+            } catch (error) {
+                results.push(`❌ Получение прав: ${error.message}`);
+            }
+
+            showResult('allTestsResult', `
+                <strong>🧪 Результаты автоматического тестирования:</strong><br>
+                ${results.join('<br>')}
+            `);
+        }
+
+        // Автоматический запуск тестов при загрузке страницы
+        window.onload = function() {
+            console.log('🚀 Vselena Frontend Test Suite загружен');
+            console.log('🔗 Backend API:', API_BASE);
+        };
+    </script>
+</body>
+</html>

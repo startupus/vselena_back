@@ -1,0 +1,1 @@
+ALTER TABLE teams ALTER COLUMN "organizationId" DROP NOT NULL;
