@@ -4,6 +4,20 @@ export class CreateInvitations1700000013000 implements MigrationInterface {
   name = 'CreateInvitations1700000013000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Проверяем, существует ли таблица
+    const tableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'invitations'
+      )
+    `);
+    
+    if (tableExists[0].exists) {
+      console.log('Table invitations already exists, skipping creation');
+      return;
+    }
+
     await queryRunner.query(`
       CREATE TABLE invitations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
