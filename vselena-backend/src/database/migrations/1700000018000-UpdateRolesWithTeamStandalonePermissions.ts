@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UpdateRolesWithTeamStandalonePermissions1700000018 implements MigrationInterface {
-  name = 'UpdateRolesWithTeamStandalonePermissions1700000018';
+export class UpdateRolesWithTeamStandalonePermissions1700000018000 implements MigrationInterface {
+  name = 'UpdateRolesWithTeamStandalonePermissions1700000018000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Получаем ID ролей
@@ -69,3 +69,5 @@ export class UpdateRolesWithTeamStandalonePermissions1700000018 implements Migra
     `);
   }
 }
+
+
