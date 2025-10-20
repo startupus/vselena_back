@@ -21,11 +21,10 @@ export class CreateSuperAdmin1731840009003 implements MigrationInterface {
 
     // Назначаем роль super_admin
     await queryRunner.query(`
-      INSERT INTO user_roles ("userId", "roleId", "grantedAt")
+      INSERT INTO user_roles ("userId", "roleId")
       SELECT 
         '00000000-0000-0000-0000-000000000001',
-        r.id,
-        NOW()
+        r.id
       FROM roles r 
       WHERE r.name = 'super_admin'
       ON CONFLICT ("userId", "roleId") DO NOTHING;
