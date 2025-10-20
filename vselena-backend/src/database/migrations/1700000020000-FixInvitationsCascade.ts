@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class FixInvitationsCascade1700000020 implements MigrationInterface {
-  name = 'FixInvitationsCascade1700000020';
+export class FixInvitationsCascade1700000020000 implements MigrationInterface {
+  name = 'FixInvitationsCascade1700000020000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Удаляем старые foreign key constraints
@@ -31,3 +31,5 @@ export class FixInvitationsCascade1700000020 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE invitations ADD CONSTRAINT "FK_b9139f00cebfadced76bca3084f" FOREIGN KEY ("organizationId") REFERENCES organizations(id)`);
   }
 }
+
+
