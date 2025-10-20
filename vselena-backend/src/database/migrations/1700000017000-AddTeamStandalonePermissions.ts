@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddTeamStandalonePermissions1700000017 implements MigrationInterface {
-  name = 'AddTeamStandalonePermissions1700000017';
+export class AddTeamStandalonePermissions1700000017000 implements MigrationInterface {
+  name = 'AddTeamStandalonePermissions1700000017000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Добавляем новые права для команд
@@ -20,3 +20,5 @@ export class AddTeamStandalonePermissions1700000017 implements MigrationInterfac
     `);
   }
 }
+
+
