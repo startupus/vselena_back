@@ -4,6 +4,19 @@ export class AddTwoFactorSettings1731840009001 implements MigrationInterface {
   name = 'AddTwoFactorSettings1731840009001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Проверяем, существуют ли колонки 2FA
+    const columnsExist = await queryRunner.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      AND column_name IN ('twoFactorEnabled', 'twoFactorMethods', 'phoneVerified', 'twoFactorSecret', 'backupCodes', 'twoFactorBackupCodesUsed')
+    `);
+    
+    if (columnsExist.length > 0) {
+      console.log('2FA columns already exist, skipping creation');
+      return;
+    }
+
     // Добавляем поля для настроек 2FA в таблицу users
     await queryRunner.query(`
       ALTER TABLE "users" 
