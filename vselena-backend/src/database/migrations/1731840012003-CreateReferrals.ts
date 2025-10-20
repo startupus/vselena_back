@@ -4,6 +4,20 @@ export class CreateReferrals1731840012003 implements MigrationInterface {
   name = 'CreateReferrals1731840012003';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Проверяем, существует ли таблица
+    const tableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'referrals'
+      )
+    `);
+    
+    if (tableExists[0].exists) {
+      console.log('Table referrals already exists, skipping creation');
+      return;
+    }
+
     // Создаем таблицу referrals
     await queryRunner.query(`
       CREATE TABLE referrals (

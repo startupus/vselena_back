@@ -4,6 +4,28 @@ export class CreateUserOrganizationsAndTeamsTables1731840012002 implements Migra
   name = 'CreateUserOrganizationsAndTeamsTables1731840012002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Проверяем, существуют ли таблицы
+    const userOrgsExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_organizations'
+      )
+    `);
+    
+    const userTeamsExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_teams'
+      )
+    `);
+    
+    if (userOrgsExists[0].exists && userTeamsExists[0].exists) {
+      console.log('Tables user_organizations and user_teams already exist, skipping creation');
+      return;
+    }
+
     // Создаем таблицу user_organizations
     await queryRunner.query(`
       CREATE TABLE user_organizations (

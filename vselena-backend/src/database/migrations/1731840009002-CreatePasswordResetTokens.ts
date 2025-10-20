@@ -4,6 +4,20 @@ export class CreatePasswordResetTokens1731840009002 implements MigrationInterfac
   name = 'CreatePasswordResetTokens1731840009002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Проверяем, существует ли таблица
+    const tableExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'password_reset_tokens'
+      )
+    `);
+    
+    if (tableExists[0].exists) {
+      console.log('Table password_reset_tokens already exists, skipping creation');
+      return;
+    }
+
     // Создаем таблицу для токенов восстановления пароля
     await queryRunner.query(`
       CREATE TABLE "password_reset_tokens" (
