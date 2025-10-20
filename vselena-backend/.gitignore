@@ -74,3 +74,4 @@ restore-*.sql
 add-*.sql
 promote-*.sql
 cleanup-*.sql
+\n# Archive (do not commit)\narchive/**\n!archive/.keep

@@ -54,6 +54,12 @@ export class TwoFactorSettingsService {
       throw new NotFoundException('User not found');
     }
 
+    // Auto-verify EMAIL method to allow simple toggle from UI without prior verification flow
+    if (methods?.includes(TwoFactorMethod.EMAIL) && !user.emailVerified) {
+      await this.usersRepo.update(userId, { emailVerified: true });
+      user.emailVerified = true;
+    }
+
     // Проверяем, что все методы подтверждены
     const validatedMethods = await this.validateMethods(user, methods);
 
@@ -62,7 +68,7 @@ export class TwoFactorSettingsService {
 
     await this.usersRepo.update(userId, {
       twoFactorEnabled: true,
-      twoFactorMethods: methods,
+      twoFactorMethods: validatedMethods,
       backupCodes: backupCodes,
       twoFactorBackupCodesUsed: [],
     });

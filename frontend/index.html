@@ -1197,9 +1197,8 @@
             } catch (error) {
                 console.error('Login error:', error);
                 
-                // Check if user doesn't exist (404 or specific error)
-                if (error.message.includes('404') || error.message.includes('User not found') || error.message.includes('Пользователь не найден')) {
-                    // User doesn't exist, switch to smart registration
+                // Показываем регистрацию ТОЛЬКО если backend явно сообщил, что пользователя нет
+                if (error.message.includes('Пользователь не найден') || error.message.includes('User not found')) {
                     showSmartRegistration(email, password);
                     showMessage('Пользователь не найден. Заполните дополнительную информацию для регистрации', 'info');
                 } else if (error.message.includes('Неверный пароль')) {

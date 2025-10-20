@@ -1587,11 +1587,30 @@
         function setupEventListeners() {
             // Navigation
             document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', function(e) {
+                item.addEventListener('click', async function(e) {
                     e.preventDefault();
                     const section = this.dataset.section;
+
+                    // Guarded sections requiring permissions
+                    const sectionPermissions = {
+                        'organizations': 'settings.update',
+                        'teams': 'teams.members',
+                        // Требуем более высокий доступ для раздела "Сотрудники"
+                        'users': 'users.update',
+                    };
+
+                    const required = sectionPermissions[section];
+                    if (required) {
+                        const user = JSON.parse(localStorage.getItem('userData') || '{}');
+                        const perms = user.permissions || [];
+                        if (!perms.includes(required)) {
+                            showNotification('Недостаточно прав для доступа к разделу', 'error');
+                            return;
+                        }
+                    }
+
                     showSection(section);
-                    
+
                     // Update active nav item
                     document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
                     this.classList.add('active');
@@ -2340,6 +2359,13 @@
                         window.location.href = 'index.html';
                         throw new Error('Unauthorized');
                     }
+                }
+                if (response.status === 403) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const msg = errorData?.message || 'Недостаточно прав для выполнения действия';
+                    // Show friendly permissions message instead of generic error
+                    showNotification(msg, 'error');
+                    throw new Error('Forbidden');
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
