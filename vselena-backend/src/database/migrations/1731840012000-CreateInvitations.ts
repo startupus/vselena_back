@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateInvitations1700000013000 implements MigrationInterface {
-  name = 'CreateInvitations1700000013000';
+export class CreateInvitations1731840012000 implements MigrationInterface {
+  name = 'CreateInvitations1731840012000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Проверяем, существует ли таблица

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateUserOrganizationsAndTeamsTables1700000014000 implements MigrationInterface {
-  name = 'CreateUserOrganizationsAndTeamsTables1700000014000';
+export class CreateUserOrganizationsAndTeamsTables1731840012002 implements MigrationInterface {
+  name = 'CreateUserOrganizationsAndTeamsTables1731840012002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Создаем таблицу user_organizations

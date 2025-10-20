@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateReferrals1700000019000 implements MigrationInterface {
-  name = 'CreateReferrals1700000019000';
+export class CreateReferrals1731840012003 implements MigrationInterface {
+  name = 'CreateReferrals1731840012003';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Создаем таблицу referrals

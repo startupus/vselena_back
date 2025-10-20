@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddCreatedByToOrganizationsAndTeams1700000013000 implements MigrationInterface {
-  name = 'AddCreatedByToOrganizationsAndTeams1700000013000';
+export class AddCreatedByToOrganizationsAndTeams1731840012001 implements MigrationInterface {
+  name = 'AddCreatedByToOrganizationsAndTeams1731840012001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Добавляем поле created_by в таблицу organizations

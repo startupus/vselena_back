@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateEmailVerificationTokens1700000012000 implements MigrationInterface {
+export class CreateEmailVerificationTokens1731840009004 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({

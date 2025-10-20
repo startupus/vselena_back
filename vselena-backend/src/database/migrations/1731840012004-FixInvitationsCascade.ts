@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class FixInvitationsCascade1700000020000 implements MigrationInterface {
-  name = 'FixInvitationsCascade1700000020000';
+export class FixInvitationsCascade1731840012004 implements MigrationInterface {
+  name = 'FixInvitationsCascade1731840012004';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Удаляем старые foreign key constraints
