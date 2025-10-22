@@ -999,6 +999,7 @@
         let currentUser = null;
         let authToken = null;
         let pending2FAUserId = null;
+        let pending2FAEmail = null;
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -1196,8 +1197,9 @@
                 });
 
                 if (response.requires2FA) {
-                    // Save userId for 2FA completion
+                    // Save userId and email for 2FA completion
                     pending2FAUserId = response.userId;
+                    pending2FAEmail = email;
                     // Send 2FA code to email
                     await send2FACode(email);
                     // Show 2FA form
@@ -1242,9 +1244,12 @@
             console.log('🚨 ФРОНТЕНД v' + VERSION + ': ВЫЗВАНА ФУНКЦИЯ send2FACode (2FA)');
             console.log('📧 Email:', email);
             try {
-                await apiCall('/api/auth/2fa/email/send-code', {
+                await apiCall('/api/two-factor/send-code', {
                     method: 'POST',
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ 
+                        type: 'email',
+                        contact: email 
+                    })
                 });
                 console.log('2FA code sent to email:', email);
             } catch (error) {
@@ -1269,7 +1274,7 @@
             showLoading('sendCodeBtn', 'sendCodeBtnText', 'sendCodeLoading');
 
             try {
-                await apiCall('/api/auth/2fa/email/send-code', {
+                await apiCall('/api/auth/email-code/send', {
                     method: 'POST',
                     body: JSON.stringify({ email })
                 });
@@ -1315,7 +1320,7 @@
             showLoading('emailCodeBtn', 'emailCodeBtnText', 'emailCodeLoading');
 
             try {
-                const response = await apiCall('/api/auth/2fa/email/verify', {
+                const response = await apiCall('/api/auth/email-code/login', {
                     method: 'POST',
                     body: JSON.stringify({ email, code })
                 });
@@ -1363,7 +1368,7 @@
             resendBtnText.textContent = 'Отправка...';
 
             try {
-                await apiCall('/api/auth/2fa/email/send-code', {
+                await apiCall('/api/auth/email-code/send', {
                     method: 'POST',
                     body: JSON.stringify({ email })
                 });
@@ -1416,10 +1421,11 @@
             showLoading('twoFactorBtn', 'twoFactorBtnText', 'twoFactorLoading');
 
             try {
-                const response = await apiCall('/api/auth/2fa/complete', {
+                const response = await apiCall('/api/two-factor/verify-code', {
                     method: 'POST',
                     body: JSON.stringify({
-                        userId: pending2FAUserId,
+                        type: 'email',
+                        contact: pending2FAEmail,
                         code: code 
                     })
                 });
@@ -1434,6 +1440,7 @@
 
                 // Clear pending 2FA data
                 pending2FAUserId = null;
+                pending2FAEmail = null;
 
                 showMessage('Двухфакторная аутентификация пройдена!', 'success');
                 
