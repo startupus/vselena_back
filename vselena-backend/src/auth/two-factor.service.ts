@@ -101,7 +101,7 @@ export class TwoFactorService {
         type: dto.type,
         status: TwoFactorStatus.PENDING,
       },
-      relations: ['user', 'user.roles', 'user.roles.permissions'],
+      relations: ['user', 'user.userRoleAssignments', 'user.userRoleAssignments.role', 'user.userRoleAssignments.role.permissions'],
     });
 
     if (!twoFactorCode) {
@@ -248,8 +248,10 @@ export class TwoFactorService {
    * Генерация Access Token
    */
   private async generateAccessToken(user: User): Promise<string> {
-    const roles = user.roles?.map(role => role.name) || [];
-    const permissions = user.roles?.flatMap(role => role.permissions?.map(p => p.name)) || [];
+    const roles = user.userRoleAssignments?.map(assignment => assignment.role?.name).filter(Boolean) || [];
+    const permissions = user.userRoleAssignments?.flatMap(assignment => 
+      assignment.role?.permissions?.map(p => p.name) || []
+    ) || [];
 
     const payload = {
       sub: user.id,

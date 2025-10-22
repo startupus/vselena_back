@@ -40,7 +40,7 @@ export class Organization {
   @OneToMany(() => Team, (team) => team.organization)
   teams: Team[];
 
-  @OneToMany(() => User, (user) => user.organization)
+  @OneToMany(() => User, (user) => user.organizations)
   users: User[];
 
   @ManyToMany(() => User, (user) => user.organizations)

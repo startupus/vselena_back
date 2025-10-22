@@ -132,9 +132,9 @@ export class UsersController {
     return this.usersService.changeUserRole(
       userId,
       changeRoleDto.roleId,
+      currentUser.userId,
       changeRoleDto.organizationId,
-      changeRoleDto.teamId,
-      currentUser.userId
+      changeRoleDto.teamId
     );
   }
 

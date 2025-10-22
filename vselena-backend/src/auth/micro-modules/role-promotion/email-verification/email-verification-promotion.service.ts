@@ -29,9 +29,18 @@ export class EmailVerificationPromotionService {
       where: { name: 'editor' } 
     });
     
-    if (editorRole && !user.roles.some(r => r.name === 'editor')) {
-      user.roles.push(editorRole);
-      await this.usersRepository.save(user);
+    if (editorRole && !user.userRoleAssignments?.some(a => a.role?.name === 'editor')) {
+      // Создаем новое назначение роли
+      const userRoleAssignment = this.usersRepository.manager.create('UserRoleAssignment', {
+        userId: user.id,
+        roleId: editorRole.id,
+        organizationId: null,
+        teamId: null,
+        assignedBy: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await this.usersRepository.manager.save('UserRoleAssignment', userRoleAssignment);
       console.log(`📧 Пользователь ${user.email} повышен до editor после подтверждения email`);
     }
   }

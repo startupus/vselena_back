@@ -24,9 +24,9 @@ export class RbacService {
 
     if (!user) return false;
 
-    return user.roles.some(role =>
-      role.permissions.some(perm => perm.name === permissionName)
-    );
+    return user.userRoleAssignments?.some(assignment =>
+      assignment.role?.permissions?.some(perm => perm.name === permissionName)
+    ) || false;
   }
 
   /**
@@ -35,10 +35,12 @@ export class RbacService {
   async userHasRole(userId: string, roleName: string): Promise<boolean> {
     const user = await this.usersRepo.findOne({
       where: { id: userId },
-      relations: ['roles'],
+      relations: ['userRoleAssignments', 'userRoleAssignments.role'],
     });
 
-    return user?.roles.some(role => role.name === roleName) ?? false;
+    return user?.userRoleAssignments?.some(assignment => 
+      assignment.role && assignment.role.name === roleName
+    ) ?? false;
   }
 
   /**
@@ -53,8 +55,8 @@ export class RbacService {
     if (!user) return [];
 
     const permissions = new Set<string>();
-    user.roles.forEach(role => {
-      role.permissions.forEach(perm => permissions.add(perm.name));
+    user.userRoleAssignments?.forEach(assignment => {
+      assignment.role?.permissions?.forEach(perm => permissions.add(perm.name));
     });
 
     return Array.from(permissions);
@@ -137,14 +139,14 @@ export class RbacService {
     // Сначала получаем пользователя с текущими ролями
     const user = await this.usersRepo.findOne({
       where: { id: userId },
-      relations: ['roles'],
+      relations: ['userRoleAssignments', 'userRoleAssignments.role'],
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    console.log('🔍 Текущие роли пользователя:', user.roles?.map(r => r.name));
+    console.log('🔍 Текущие роли пользователя:', user.userRoleAssignments?.map(a => a.role?.name).filter(Boolean));
 
     // Удаляем все текущие роли через прямой SQL запрос
     await this.usersRepo.query(

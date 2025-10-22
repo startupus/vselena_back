@@ -8,11 +8,13 @@ import {
   JoinColumn,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Organization } from '../../organizations/entities/organization.entity';
 import { Team } from '../../teams/entities/team.entity';
 import { User } from '../../users/entities/user.entity';
 import { Permission } from './permission.entity';
+import { UserRoleAssignment } from '../../users/entities/user-role-assignment.entity';
 
 @Entity('roles')
 export class Role {
@@ -52,8 +54,8 @@ export class Role {
   @JoinColumn({ name: 'teamId' })
   team: Team;
 
-  @ManyToMany(() => User, (user) => user.roles)
-  users: User[];
+  @OneToMany(() => UserRoleAssignment, (assignment) => assignment.role)
+  userRoleAssignments: UserRoleAssignment[];
 
   @ManyToMany(() => Permission, (permission) => permission.roles)
   @JoinTable({

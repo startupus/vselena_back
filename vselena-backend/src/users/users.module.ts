@@ -10,9 +10,10 @@ import { User } from './entities/user.entity';
 import { UserRoleAssignment } from './entities/user-role-assignment.entity';
 import { Role } from '../rbac/entities/role.entity';
 import { Invitation } from '../auth/micro-modules/invitations/entities/invitation.entity';
+import { Team } from '../teams/entities/team.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserRoleAssignment, Role, Invitation])],
+  imports: [TypeOrmModule.forFeature([User, UserRoleAssignment, Role, Invitation, Team])],
   controllers: [UsersController, TwoFactorSettingsController, UserRoleManagementController],
   providers: [UsersService, TwoFactorSettingsService, UserRoleManagementService],
   exports: [UsersService, TwoFactorSettingsService, UserRoleManagementService],

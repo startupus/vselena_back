@@ -23,7 +23,7 @@ export class EmailCodeService {
     // Находим пользователя по email
     const user = await this.usersRepo.findOne({
       where: { email },
-      relations: ['roles', 'roles.permissions'],
+      relations: ['userRoleAssignments', 'userRoleAssignments.role', 'userRoleAssignments.role.permissions'],
     });
 
     if (!user) {
@@ -81,7 +81,7 @@ export class EmailCodeService {
     // Находим пользователя
     const user = await this.usersRepo.findOne({
       where: { email: codeData.email },
-      relations: ['roles', 'roles.permissions', 'organization', 'team'],
+      relations: ['userRoleAssignments', 'userRoleAssignments.role', 'userRoleAssignments.role.permissions', 'organizations', 'teams'],
     });
 
     if (!user) {
@@ -92,14 +92,14 @@ export class EmailCodeService {
     this.emailCodes.delete(code);
 
     // Генерируем токены
-    const permissions = this.extractPermissions(user.roles);
+    const permissions = this.extractPermissions(user.userRoleAssignments);
     
     const payload = {
       sub: user.id,
       email: user.email,
       organizationId: user.organizations?.[0]?.id || null,
       teamId: user.teams?.[0]?.id || null,
-      roles: user.roles.map(r => r.name),
+      roles: user.userRoleAssignments?.map(a => a.role?.name).filter(Boolean) || [],
       permissions,
     };
 
@@ -121,20 +121,20 @@ export class EmailCodeService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        organizationId: user.organizationId,
-        teamId: user.teamId,
-        roles: user.roles.map(r => r.name),
+        organizationId: user.organizations?.[0]?.id || null,
+        teamId: user.teams?.[0]?.id || null,
+        roles: user.userRoleAssignments?.map(a => a.role?.name).filter(Boolean) || [],
         permissions,
       },
     };
   }
 
-  private extractPermissions(roles: any[]): string[] {
+  private extractPermissions(userRoleAssignments: any[]): string[] {
     const permissions = new Set<string>();
     
-    roles.forEach(role => {
-      if (role.permissions) {
-        role.permissions.forEach(perm => {
+    userRoleAssignments?.forEach(assignment => {
+      if (assignment.role?.permissions) {
+        assignment.role.permissions.forEach(perm => {
           permissions.add(perm.name);
         });
       }

@@ -96,21 +96,37 @@ export async function seedDefaultData(dataSource: DataSource) {
       passwordHash,
       firstName: 'Админ',
       lastName: 'Системы',
-      organizationId: organization.id,
-      teamId: team.id,
       isActive: true,
       emailVerified: true,
     });
     adminUser = await userRepo.save(adminUser);
 
-    // Назначаем super_admin роль
+    // Добавляем связи с организацией и командой
+    await userRepo
+      .createQueryBuilder()
+      .relation(User, 'organizations')
+      .of(adminUser.id)
+      .add(organization.id);
+
+    await userRepo
+      .createQueryBuilder()
+      .relation(User, 'teams')
+      .of(adminUser.id)
+      .add(team.id);
+
+    // Назначаем super_admin роль через UserRoleAssignment
     const superAdminRole = createdRoles.find(r => r.name === 'super_admin');
     if (superAdminRole) {
-      await userRepo
-        .createQueryBuilder()
-        .relation(User, 'roles')
-        .of(adminUser.id)
-        .add(superAdminRole.id);
+      const userRoleAssignmentRepo = dataSource.getRepository('UserRoleAssignment');
+      await userRoleAssignmentRepo.save({
+        userId: adminUser.id,
+        roleId: superAdminRole.id,
+        organizationId: organization.id,
+        teamId: team.id,
+        assignedBy: adminUser.id,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
     }
   }
 

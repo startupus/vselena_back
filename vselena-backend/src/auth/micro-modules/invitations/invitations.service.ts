@@ -57,10 +57,10 @@ export class InvitationsService {
     // Если пользователь уже существует, добавляем его в организацию/команду
     if (existingUser) {
       // Проверяем, не является ли пользователь уже членом
-      if (dto.type === InvitationType.ORGANIZATION && existingUser.organizationId === dto.organizationId) {
+      if (dto.type === InvitationType.ORGANIZATION && existingUser.organizations?.some(org => org.id === dto.organizationId)) {
         throw new BadRequestException('Пользователь уже является членом этой организации');
       }
-      if (dto.type === InvitationType.TEAM && existingUser.teamId === dto.teamId) {
+      if (dto.type === InvitationType.TEAM && existingUser.teams?.some(team => team.id === dto.teamId)) {
         throw new BadRequestException('Пользователь уже является членом этой команды');
       }
 
@@ -233,25 +233,30 @@ export class InvitationsService {
         firstName: dto.firstName || invitation.firstName || 'Пользователь',
         lastName: dto.lastName || invitation.lastName || 'Пользователь',
         passwordHash: dto.password ? await this.hashPassword(dto.password) : null,
-        organizationId: invitation.organizationId,
-        teamId: invitation.teamId,
       });
       console.log(`✅ Создан новый пользователь ${user.email}`);
     } else {
       console.log(`ℹ️ Пользователь ${user.email} уже существует`);
     }
 
+    // Добавляем пользователя в организацию/команду
+    if (invitation.organizationId) {
+      await this.usersService.updateUserOrganization(user.id, invitation.organizationId, user.id);
+    }
+    if (invitation.teamId) {
+      await this.usersService.updateUserTeam(user.id, invitation.teamId, user.id);
+    }
+
     // Назначаем роль из приглашения (если указана) или базовую роль
     if (invitation.roleId) {
       // Проверяем, не назначена ли уже эта роль
       const existingAssignment = await this.userRoleAssignmentRepo.findOne({
-        where: { 
-          userId: user.id, 
+        where: {
+          userId: user.id,
           roleId: invitation.roleId,
           organizationId: invitation.organizationId,
           teamId: invitation.teamId
-        },
-        where: { userId: user.id, roleId: invitation.roleId },
+        }
       });
 
       if (!existingAssignment) {

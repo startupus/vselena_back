@@ -287,9 +287,7 @@ export class AuthService {
    * Получить актуальные данные текущего пользователя
    */
   async getCurrentUser(userId: string): Promise<any> {
-    const user = await this.usersService.findById(userId, {
-      relations: ['organizations', 'teams'] as any,
-    } as any);
+    const user = await this.usersService.findById(userId);
 
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден');

@@ -161,13 +161,15 @@ export class EmailTwoFactorService {
    */
   async generateTokensForUser(user: User): Promise<{ accessToken: string; refreshToken: string }> {
     // Генерируем Access Token
-    const permissions = user.roles?.flatMap(role => role.permissions?.map(p => p.name) || []) || [];
+    const permissions = user.userRoleAssignments?.flatMap(assignment => 
+      assignment.role?.permissions?.map(p => p.name) || []
+    ) || [];
     const accessToken = this.jwtService.sign({
       sub: user.id,
       email: user.email,
       organizationId: user.organizations?.[0]?.id || null,
       teamId: user.teams?.[0]?.id || null,
-      roles: user.roles?.map(r => r.name) || [],
+      roles: user.userRoleAssignments?.map(a => a.role?.name).filter(Boolean) || [],
       permissions,
     });
 

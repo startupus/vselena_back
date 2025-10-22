@@ -49,8 +49,8 @@ export class EmailTwoFactorController {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          roles: user.roles?.map(r => r.name) || [],
-          permissions: user.roles?.flatMap(r => r.permissions?.map(p => p.name) || []) || []
+          roles: user.userRoleAssignments?.map(a => a.role?.name).filter(Boolean) || [],
+          permissions: user.userRoleAssignments?.flatMap(a => a.role?.permissions?.map(p => p.name) || []) || []
         },
         ...tokens
       };

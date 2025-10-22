@@ -38,7 +38,9 @@ export class UserRoleManagementService {
       throw new NotFoundException('Промоутер не найден');
     }
 
-    const isSuperAdmin = promoter.roles.some(role => role.name === 'super_admin');
+    const isSuperAdmin = promoter.userRoleAssignments?.some(assignment => 
+      assignment.role && assignment.role.name === 'super_admin'
+    ) || false;
     if (!isSuperAdmin) {
       throw new ForbiddenException('Только супер-админы могут повышать роли');
     }
@@ -63,7 +65,9 @@ export class UserRoleManagementService {
 
     // Удаляем старые роли (кроме системных, которые нельзя удалить)
     const systemRoles = ['super_admin', 'admin', 'manager', 'editor', 'viewer'];
-    const removableRoles = user.roles.filter(role => !systemRoles.includes(role.name));
+    const removableRoles = user.userRoleAssignments?.filter(assignment => 
+      assignment.role && !systemRoles.includes(assignment.role.name)
+    ) || [];
     
     for (const role of removableRoles) {
       await this.usersRepo
@@ -113,7 +117,9 @@ export class UserRoleManagementService {
       throw new NotFoundException('Демоутер не найден');
     }
 
-    const isSuperAdmin = demoter.roles.some(role => role.name === 'super_admin');
+    const isSuperAdmin = demoter.userRoleAssignments?.some(assignment => 
+      assignment.role && assignment.role.name === 'super_admin'
+    ) || false;
     if (!isSuperAdmin) {
       throw new ForbiddenException('Только супер-админы могут понижать роли');
     }
@@ -128,7 +134,9 @@ export class UserRoleManagementService {
       throw new NotFoundException('Пользователь не найден');
     }
 
-    const roleToRemove = user.roles.find(role => role.name === roleName);
+    const roleToRemove = user.userRoleAssignments?.find(assignment => 
+      assignment.role && assignment.role.name === roleName
+    );
     if (!roleToRemove) {
       throw new NotFoundException('Роль не найдена у пользователя');
     }
@@ -312,7 +320,9 @@ export class UserRoleManagementService {
     }
 
     // Получаем все роли, кроме тех, что уже есть у пользователя
-    const userRoleNames = user.roles.map(role => role.name);
+    const userRoleNames = user.userRoleAssignments?.map(assignment => 
+      assignment.role?.name
+    ).filter(Boolean) || [];
     const availableRoles = await this.rolesRepo.find({
       where: {
         name: Not(userRoleNames),

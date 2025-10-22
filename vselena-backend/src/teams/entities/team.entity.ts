@@ -44,7 +44,7 @@ export class Team {
   @JoinColumn({ name: 'organizationId' })
   organization: Organization | null;
 
-  @OneToMany(() => User, (user) => user.team)
+  @OneToMany(() => User, (user) => user.teams)
   users: User[];
 
   @ManyToMany(() => User, (user) => user.teams)
