@@ -87,6 +87,9 @@ export class InvitationsService {
 
       await this.invitationsRepo.save(invitation);
 
+      // Отправляем email уведомление
+      await this.sendInvitationEmail(invitation, invitedById);
+
       // Отправляем уведомление существующему пользователю
       await this.notificationsService.createNotification(
         existingUser.id,
@@ -474,7 +477,7 @@ export class InvitationsService {
   /**
    * Отправка email с приглашением
    */
-  private async sendInvitationEmail(invitation: Invitation): Promise<void> {
+  private async sendInvitationEmail(invitation: Invitation, invitedById?: string): Promise<void> {
     console.log('🔍 sendInvitationEmail called for:', invitation.email);
     console.log('🔍 Invitation data:', {
       email: invitation.email,
@@ -487,8 +490,19 @@ export class InvitationsService {
     
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     
-    // Умная ссылка - работает для авторизованных и неавторизованных пользователей
-    const smartInvitationLink = `${frontendUrl}/invitation?token=${invitation.token}`;
+    // Получаем информацию о приглашающем
+    let inviterName = 'Неизвестный';
+    if (invitedById) {
+      try {
+        const inviter = await this.usersRepo.findOne({ where: { id: invitedById } });
+        inviterName = inviter ? `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() || inviter.email : 'Неизвестный';
+      } catch (error) {
+        console.error('Ошибка получения информации о приглашающем:', error);
+      }
+    }
+    
+    // Ссылка ведет на главную страницу входа (ввод email)
+    const loginUrl = `${frontendUrl}`;
 
     // Получаем информацию об организации/команде
     let invitationTarget = '';
@@ -512,12 +526,21 @@ export class InvitationsService {
             ${invitation.firstName ? `Привет, ${invitation.firstName}!` : 'Привет!'}
           </p>
           <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-            Вас пригласили присоединиться к ${invitationTarget} в системе Vselena.
+            <strong>${inviterName}</strong> пригласил вас присоединиться к ${invitationTarget} в системе Vselena.
           </p>
+          
+          <div style="background: #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #1e293b; font-weight: 600; margin: 0 0 10px 0;">Детали приглашения:</p>
+            <ul style="color: #475569; margin: 0; padding-left: 20px;">
+              <li><strong>Приглашающий:</strong> ${inviterName}</li>
+              <li><strong>${invitation.type === InvitationType.TEAM ? 'Команда' : 'Организация'}:</strong> ${invitationTarget}</li>
+              <li><strong>Email:</strong> ${invitation.email}</li>
+            </ul>
+          </div>
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${smartInvitationLink}" 
+          <a href="${loginUrl}" 
              style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     color: white; 
                     padding: 15px 30px; 
@@ -527,8 +550,14 @@ export class InvitationsService {
                     font-size: 16px; 
                     display: inline-block;
                     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
-            ✨ Принять приглашение
+            Войти в систему
           </a>
+        </div>
+        
+        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+          <p style="color: #92400e; margin: 0; font-size: 14px;">
+            <strong>💡 Важно:</strong> Ссылка ведет на главную страницу входа в систему. После входа вы сможете принять или отклонить приглашение в разделе уведомлений.
+          </p>
         </div>
 
         <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -1044,6 +1073,9 @@ export class InvitationsService {
 
     await this.invitationsRepo.save(invitation);
 
+    // Отправляем email уведомление
+    await this.sendInvitationEmail(invitation, invitedById);
+
     // Формируем ссылку для приглашения
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const invitationLink = `${frontendUrl}/invitation?token=${token}`;
@@ -1120,4 +1152,5 @@ export class InvitationsService {
       type: dto.type === InvitationType.TEAM ? 'team' : 'organization',
     });
   }
+
 }
