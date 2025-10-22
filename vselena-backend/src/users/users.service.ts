@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Invitation } from '../auth/micro-modules/invitations/entities/invitation.entity';
 import { Team } from '../teams/entities/team.entity';
+import { Role } from '../rbac/entities/role.entity';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +15,8 @@ export class UsersService {
     private invitationsRepo: Repository<Invitation>,
     @InjectRepository(Team)
     private teamsRepo: Repository<Team>,
+    @InjectRepository(Role)
+    private rolesRepo: Repository<Role>,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -109,6 +112,14 @@ export class UsersService {
    */
   async getUserCount(): Promise<number> {
     return this.usersRepo.count();
+  }
+
+  async getUserTeams(userId: string): Promise<Team[]> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.teams || [];
   }
 
   /**
@@ -467,6 +478,47 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // Проверяем, что текущий пользователь имеет право изменять роли
+    const currentUser = await this.findById(assignedBy);
+    if (!currentUser) {
+      throw new NotFoundException('Current user not found');
+    }
+
+    // Проверяем доступ к организации/команде
+    if (organizationId) {
+      const hasAccessToOrg = currentUser.organizations?.some(org => org.id === organizationId);
+      if (!hasAccessToOrg) {
+        throw new ForbiddenException('You do not have access to this organization');
+      }
+    }
+
+    if (teamId) {
+      // Проверяем, что текущий пользователь имеет доступ к команде
+      const hasAccessToTeam = currentUser.teams?.some(team => team.id === teamId) ||
+        currentUser.organizations?.some(org => {
+          // Проверяем, что команда принадлежит к организации, к которой имеет доступ пользователь
+          return user.teams?.some(team => team.id === teamId && team.organizationId === org.id);
+        });
+      
+      if (!hasAccessToTeam) {
+        throw new ForbiddenException('You do not have access to this team');
+      }
+
+      // ВАЖНО: Проверяем, что пользователь, которому назначается роль, состоит в этой команде
+      const userIsInTeam = user.teams?.some(team => team.id === teamId);
+      if (!userIsInTeam) {
+        throw new ForbiddenException('Пользователь не является членом этой команды. Сначала добавьте пользователя в команду.');
+      }
+    }
+
+    if (organizationId) {
+      // ВАЖНО: Проверяем, что пользователь, которому назначается роль, состоит в этой организации
+      const userIsInOrg = user.organizations?.some(org => org.id === organizationId);
+      if (!userIsInOrg) {
+        throw new ForbiddenException('Пользователь не является членом этой организации. Сначала добавьте пользователя в организацию.');
+      }
+    }
+
     // Удаляем ВСЕ старые роли пользователя в данном контексте
     // Если указан контекст (organizationId или teamId), удаляем роли только в этом контексте
     // Если контекст не указан, удаляем все роли пользователя
@@ -494,10 +546,11 @@ export class UsersService {
     }
     // Если ни organizationId, ни teamId не указаны, удаляем все роли
 
-    await deleteQuery.execute();
+    const deleteResult = await deleteQuery.execute();
+    console.log(`Deleted ${deleteResult.affected} old role assignments for user ${userId}`);
 
     // Добавляем новую роль
-    await this.usersRepo
+    const insertResult = await this.usersRepo
       .createQueryBuilder()
       .insert()
       .into('user_role_assignments')
@@ -511,6 +564,8 @@ export class UsersService {
         updatedAt: new Date()
       })
       .execute();
+    
+    console.log(`Added new role assignment for user ${userId}, role ${roleId}, org ${organizationId}, team ${teamId}`);
 
     // Возвращаем обновленного пользователя
     const updatedUser = await this.findById(userId);
@@ -534,6 +589,69 @@ export class UsersService {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Проверяем, что текущий пользователь имеет право на перевод
+    const currentUser = await this.findById(currentUserId);
+    if (!currentUser) {
+      throw new NotFoundException('Current user not found');
+    }
+
+    // Получаем информацию о командах для проверки доступа
+    let fromTeam: Team | null = null;
+    let toTeam: Team | null = null;
+
+    if (fromTeamId) {
+      fromTeam = await this.teamsRepo.findOne({
+        where: { id: fromTeamId },
+        relations: ['organization']
+      });
+    }
+
+    if (toTeamId) {
+      toTeam = await this.teamsRepo.findOne({
+        where: { id: toTeamId },
+        relations: ['organization']
+      });
+    }
+
+    // Проверяем, что текущий пользователь имеет доступ к исходной команде
+    if (fromTeamId && fromTeam) {
+      const hasAccessToFromTeam = currentUser.organizations?.some(org => 
+        org.id === fromTeam!.organizationId
+      ) || currentUser.teams?.some(team => team.id === fromTeamId);
+      
+      if (!hasAccessToFromTeam) {
+        throw new ForbiddenException('You do not have access to the source team');
+      }
+
+      // ВАЖНО: Проверяем, что пользователь, которого переводят, состоит в исходной команде
+      const userIsInFromTeam = user.teams?.some(team => team.id === fromTeamId);
+      if (!userIsInFromTeam) {
+        throw new ForbiddenException('User is not a member of the source team');
+      }
+    }
+
+    // Проверяем, что текущий пользователь имеет доступ к целевой команде
+    if (toTeamId && toTeam) {
+      const hasAccessToToTeam = currentUser.organizations?.some(org => 
+        org.id === toTeam!.organizationId
+      ) || currentUser.teams?.some(team => team.id === toTeamId);
+      
+      if (!hasAccessToToTeam) {
+        throw new ForbiddenException('You do not have access to the target team');
+      }
+    }
+
+    // Удаляем старые роли пользователя в исходной команде
+    if (fromTeamId) {
+      await this.usersRepo
+        .createQueryBuilder()
+        .delete()
+        .from('user_role_assignments')
+        .where('userId = :userId', { userId })
+        .andWhere('teamId = :fromTeamId', { fromTeamId })
+        .execute();
     }
 
     // Удаляем старую связь с командой
@@ -560,9 +678,48 @@ export class UsersService {
         .execute();
     }
 
-    // Обновляем роль пользователя в новом контексте
-    if (roleId) {
-      await this.changeUserRole(userId, roleId, currentUserId, undefined, toTeamId || undefined);
+    // Назначаем новую роль в целевой команде
+    if (roleId && toTeamId && toTeam) {
+      // Получаем organizationId целевой команды
+      const targetTeamOrgId = toTeam.organizationId || null;
+      
+      await this.usersRepo
+        .createQueryBuilder()
+        .insert()
+        .into('user_role_assignments')
+        .values({
+          userId,
+          roleId,
+          organizationId: targetTeamOrgId,
+          teamId: toTeamId,
+          assignedBy: currentUserId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .execute();
+    } else if (toTeamId && toTeam) {
+      // Если роль не указана, назначаем роль по умолчанию (viewer)
+      const targetTeamOrgId = toTeam.organizationId || null;
+      const viewerRole = await this.rolesRepo.findOne({
+        where: { name: 'viewer' }
+      });
+      
+      if (viewerRole) {
+        await this.usersRepo
+          .createQueryBuilder()
+          .insert()
+          .into('user_role_assignments')
+          .values({
+            userId,
+            roleId: viewerRole.id,
+            organizationId: targetTeamOrgId,
+            teamId: toTeamId,
+            assignedBy: currentUserId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .execute();
+      }
     }
 
     // Возвращаем обновленного пользователя
@@ -571,5 +728,85 @@ export class UsersService {
       throw new NotFoundException('Updated user not found');
     }
     return updatedUser;
+  }
+
+  /**
+   * Удаление пользователя из всех доступных контекстов (НЕ полное удаление пользователя)
+   */
+  async removeUserFromContext(
+    userId: string,
+    currentUserId: string
+  ): Promise<void> {
+    // Проверяем, что пользователь существует
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Проверяем, что текущий пользователь имеет право на удаление
+    const currentUser = await this.findById(currentUserId);
+    if (!currentUser) {
+      throw new NotFoundException('Current user not found');
+    }
+
+    // Получаем все доступные организации и команды текущего пользователя
+    const accessibleOrgIds = currentUser.organizations?.map(org => org.id) || [];
+    const accessibleTeamIds = currentUser.teams?.map(team => team.id) || [];
+    
+    // Добавляем команды, которые принадлежат доступным организациям
+    if (accessibleOrgIds.length > 0) {
+      const teamsInOrgs = await this.teamsRepo.find({
+        where: { organizationId: In(accessibleOrgIds) }
+      });
+      accessibleTeamIds.push(...teamsInOrgs.map(team => team.id));
+    }
+
+    // Удаляем роли пользователя только в доступных контекстах
+    if (accessibleOrgIds.length > 0 || accessibleTeamIds.length > 0) {
+      let deleteQuery = this.usersRepo
+        .createQueryBuilder()
+        .delete()
+        .from('user_role_assignments')
+        .where('userId = :userId', { userId });
+
+      const conditions: string[] = [];
+      if (accessibleOrgIds.length > 0) {
+        conditions.push('organizationId IN (:...accessibleOrgIds)');
+      }
+      if (accessibleTeamIds.length > 0) {
+        conditions.push('teamId IN (:...accessibleTeamIds)');
+      }
+
+      if (conditions.length > 0) {
+        deleteQuery = deleteQuery.andWhere(`(${conditions.join(' OR ')})`, {
+          accessibleOrgIds,
+          accessibleTeamIds
+        });
+      }
+
+      await deleteQuery.execute();
+    }
+
+    // Удаляем связи с доступными командами
+    if (accessibleTeamIds.length > 0) {
+      await this.usersRepo
+        .createQueryBuilder()
+        .delete()
+        .from('user_teams')
+        .where('user_id = :userId', { userId })
+        .andWhere('team_id IN (:...accessibleTeamIds)', { accessibleTeamIds })
+        .execute();
+    }
+
+    // Удаляем связи с доступными организациями
+    if (accessibleOrgIds.length > 0) {
+      await this.usersRepo
+        .createQueryBuilder()
+        .delete()
+        .from('user_organizations')
+        .where('user_id = :userId', { userId })
+        .andWhere('organization_id IN (:...accessibleOrgIds)', { accessibleOrgIds })
+        .execute();
+    }
   }
 }

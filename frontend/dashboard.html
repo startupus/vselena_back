@@ -2745,23 +2745,23 @@
         }
 
         async function deleteUser(userId) {
-            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя из ваших команд/организаций?')) {
                 return;
             }
 
             try {
-                console.log('Deleting user:', userId);
-                await apiCall(`/api/users/${userId}`, {
+                console.log('Removing user from context:', userId);
+                await apiCall(`/api/users/${userId}/from-context`, {
                     method: 'DELETE'
                 });
 
-                showNotification('Пользователь удален успешно', 'success');
+                showNotification('Пользователь удален из ваших команд/организаций', 'success');
                 
                 // Перезагружаем список пользователей и приглашений
                 await loadUsers();
                 await loadInvitations();
             } catch (error) {
-                console.error('Error deleting user:', error);
+                console.error('Error removing user from context:', error);
                 showNotification('Ошибка удаления пользователя: ' + error.message, 'error');
             }
         }

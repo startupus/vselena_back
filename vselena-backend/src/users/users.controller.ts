@@ -56,6 +56,15 @@ export class UsersController {
     return this.usersService.getTeamMembers(user.userId);
   }
 
+  @Get(':id/teams')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получение команд пользователя' })
+  @ApiResponse({ status: 200, description: 'Список команд пользователя' })
+  async getUserTeams(@Param('id') id: string) {
+    return this.usersService.getUserTeams(id);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -156,6 +165,23 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
   async update(@Param('id') id: string, @Body() updateUserDto: Partial<User>) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Delete(':id/from-context')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удаление пользователя из доступных команд/организаций' })
+  @ApiResponse({ status: 200, description: 'Пользователь удален из контекста' })
+  @ApiResponse({ status: 404, description: 'Пользователь не найден' })
+  async removeFromContext(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: any
+  ) {
+    await this.usersService.removeUserFromContext(
+      id,
+      currentUser.userId
+    );
+    return { message: 'User removed from context successfully' };
   }
 
   @Delete(':id')
