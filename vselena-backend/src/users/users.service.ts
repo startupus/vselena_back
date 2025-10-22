@@ -334,6 +334,12 @@ export class UsersService {
           .execute();
       }
 
+      // Получаем организацию команды
+      const team = await this.teamsRepo.findOne({
+        where: { id: teamId },
+        relations: ['organization']
+      });
+
       // Добавляем базовую роль viewer для новой команды
       const viewerRole = await this.usersRepo
         .createQueryBuilder()
@@ -351,7 +357,7 @@ export class UsersService {
           .values({
             userId,
             roleId: viewerRole.id,
-            organizationId: null,
+            organizationId: team?.organization?.id || null,
             teamId,
             assignedBy: currentUserId,
             createdAt: new Date(),

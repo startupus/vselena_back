@@ -87,9 +87,6 @@ export class InvitationsService {
 
       await this.invitationsRepo.save(invitation);
 
-      // Отправляем email уведомление
-      await this.sendInvitationEmail(invitation, invitedById);
-
       // Отправляем уведомление существующему пользователю
       await this.notificationsService.createNotification(
         existingUser.id,
@@ -103,6 +100,15 @@ export class InvitationsService {
 
       const frontendUrl = this.configService.get<string>('FRONTEND_URL');
       const invitationLink = `${frontendUrl}/dashboard?invitation=${token}`;
+
+      // Отправляем email для существующего пользователя
+      try {
+        await this.sendInvitationEmail(invitation, invitedById);
+        console.log('✅ Email sent successfully for existing user');
+      } catch (error) {
+        console.error('❌ Error sending invitation email for existing user:', error);
+        // Не бросаем ошибку, чтобы не блокировать создание приглашения
+      }
 
       return {
         id: invitation.id,
@@ -166,7 +172,7 @@ export class InvitationsService {
     
     // Отправляем email для регистрации
     try {
-      await this.sendInvitationEmail(invitation);
+      await this.sendInvitationEmail(invitation, invitedById);
       console.log('✅ Email sent successfully');
     } catch (error) {
       console.error('❌ Error sending invitation email:', error);
@@ -479,37 +485,102 @@ export class InvitationsService {
    */
   private async sendInvitationEmail(invitation: Invitation, invitedById?: string): Promise<void> {
     console.log('🔍 sendInvitationEmail called for:', invitation.email);
-    console.log('🔍 Invitation data:', {
-      email: invitation.email,
-      type: invitation.type,
-      organizationId: invitation.organizationId,
-      teamId: invitation.teamId,
-      hasOrganization: !!invitation.organization,
-      hasTeam: !!invitation.team
+    
+    // Загружаем приглашение с relations для получения полной информации
+    const fullInvitation = await this.invitationsRepo.findOne({
+      where: { id: invitation.id },
+      relations: ['organization', 'team', 'team.organization', 'invitedBy']
+    });
+    
+    if (!fullInvitation) {
+      console.error('❌ Invitation not found for email sending');
+      return;
+    }
+    
+    console.log('🔍 Full invitation data:', {
+      email: fullInvitation.email,
+      type: fullInvitation.type,
+      organizationId: fullInvitation.organizationId,
+      teamId: fullInvitation.teamId,
+      hasOrganization: !!fullInvitation.organization,
+      hasTeam: !!fullInvitation.team,
+      organizationName: fullInvitation.organization?.name,
+      teamName: fullInvitation.team?.name,
+      teamOrgName: fullInvitation.team?.organization?.name,
+      invitedById: fullInvitation.invitedById,
+      hasInvitedBy: !!fullInvitation.invitedBy,
+      invitedByEmail: fullInvitation.invitedBy?.email,
+      passedInvitedById: invitedById
     });
     
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     
     // Получаем информацию о приглашающем
     let inviterName = 'Неизвестный';
+    let inviterEmail = 'Неизвестно';
+    
+    // Сначала пробуем использовать переданный invitedById
     if (invitedById) {
       try {
         const inviter = await this.usersRepo.findOne({ where: { id: invitedById } });
-        inviterName = inviter ? `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() || inviter.email : 'Неизвестный';
+        if (inviter) {
+          inviterName = `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() || inviter.email;
+          inviterEmail = inviter.email;
+        }
       } catch (error) {
-        console.error('Ошибка получения информации о приглашающем:', error);
+        console.error('Ошибка получения информации о приглашающем по invitedById:', error);
       }
     }
+    
+    // Если не получилось получить по invitedById, пробуем через fullInvitation.invitedBy
+    if (inviterEmail === 'Неизвестно' && fullInvitation.invitedBy) {
+      try {
+        inviterName = `${fullInvitation.invitedBy.firstName || ''} ${fullInvitation.invitedBy.lastName || ''}`.trim() || fullInvitation.invitedBy.email;
+        inviterEmail = fullInvitation.invitedBy.email;
+      } catch (error) {
+        console.error('Ошибка получения информации о приглашающем через fullInvitation.invitedBy:', error);
+      }
+    }
+    
+    // Если все еще не получилось, пробуем загрузить по fullInvitation.invitedById
+    if (inviterEmail === 'Неизвестно' && fullInvitation.invitedById) {
+      try {
+        const inviter = await this.usersRepo.findOne({ where: { id: fullInvitation.invitedById } });
+        if (inviter) {
+          inviterName = `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() || inviter.email;
+          inviterEmail = inviter.email;
+        }
+      } catch (error) {
+        console.error('Ошибка получения информации о приглашающем по fullInvitation.invitedById:', error);
+      }
+    }
+    
+    console.log('🔍 Final inviter info:', {
+      inviterName,
+      inviterEmail,
+      invitedById,
+      fullInvitationInvitedById: fullInvitation.invitedById,
+      hasInvitedByRelation: !!fullInvitation.invitedBy
+    });
     
     // Ссылка ведет на главную страницу входа (ввод email)
     const loginUrl = `${frontendUrl}`;
 
     // Получаем информацию об организации/команде
     let invitationTarget = '';
-    if (invitation.type === InvitationType.ORGANIZATION && invitation.organization) {
-      invitationTarget = `организацию "${invitation.organization.name}"`;
-    } else if (invitation.type === InvitationType.TEAM && invitation.team) {
-      invitationTarget = `команду "${invitation.team.name}"`;
+    let organizationName = '';
+    let teamName = '';
+    
+    if (fullInvitation.type === InvitationType.ORGANIZATION && fullInvitation.organization) {
+      invitationTarget = `организацию "${fullInvitation.organization.name}"`;
+      organizationName = fullInvitation.organization.name;
+    } else if (fullInvitation.type === InvitationType.TEAM && fullInvitation.team) {
+      invitationTarget = `команду "${fullInvitation.team.name}"`;
+      teamName = fullInvitation.team.name;
+      // Если команда принадлежит организации, получаем название организации
+      if (fullInvitation.team.organization) {
+        organizationName = fullInvitation.team.organization.name;
+      }
     }
 
     const subject = `Приглашение в ${invitationTarget} - Vselena`;
@@ -523,7 +594,7 @@ export class InvitationsService {
         <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 20px 0;">
           <h2 style="color: #1e293b; margin-top: 0;">🎉 Вас пригласили!</h2>
           <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-            ${invitation.firstName ? `Привет, ${invitation.firstName}!` : 'Привет!'}
+            ${fullInvitation.firstName ? `Привет, ${fullInvitation.firstName}!` : 'Привет!'}
           </p>
           <p style="color: #475569; font-size: 16px; line-height: 1.6;">
             <strong>${inviterName}</strong> пригласил вас присоединиться к ${invitationTarget} в системе Vselena.
@@ -533,8 +604,9 @@ export class InvitationsService {
             <p style="color: #1e293b; font-weight: 600; margin: 0 0 10px 0;">Детали приглашения:</p>
             <ul style="color: #475569; margin: 0; padding-left: 20px;">
               <li><strong>Приглашающий:</strong> ${inviterName}</li>
-              <li><strong>${invitation.type === InvitationType.TEAM ? 'Команда' : 'Организация'}:</strong> ${invitationTarget}</li>
-              <li><strong>Email:</strong> ${invitation.email}</li>
+              ${organizationName ? `<li><strong>Организация:</strong> ${organizationName}</li>` : ''}
+              ${teamName ? `<li><strong>Команда:</strong> ${teamName}</li>` : ''}
+              <li><strong>Email приглашающего:</strong> ${inviterEmail}</li>
             </ul>
           </div>
         </div>
@@ -570,7 +642,7 @@ export class InvitationsService {
 
         <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
           <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
-            <strong>⏰ Срок действия:</strong> до ${invitation.expiresAt?.toLocaleDateString('ru-RU', { 
+            <strong>⏰ Срок действия:</strong> до ${fullInvitation.expiresAt?.toLocaleDateString('ru-RU', { 
               year: 'numeric', 
               month: 'long', 
               day: 'numeric',
@@ -579,7 +651,7 @@ export class InvitationsService {
             })}
           </p>
           <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
-            <strong>🔗 Прямая ссылка:</strong> <a href="${smartInvitationLink}" style="color: #667eea;">${smartInvitationLink}</a>
+            <strong>🔗 Прямая ссылка:</strong> <a href="${loginUrl}" style="color: #667eea;">${loginUrl}</a>
           </p>
         </div>
 
@@ -592,7 +664,7 @@ export class InvitationsService {
     `;
 
     await this.emailService.sendEmail({
-      to: invitation.email,
+      to: fullInvitation.email,
       subject,
       html,
     });
@@ -883,18 +955,55 @@ export class InvitationsService {
     // НАЗНАЧАЕМ РОЛЬ пользователю в контексте организации/команды
     if (invitation.roleId) {
       try {
-        // TODO: Временно отключено - нужно исправить зависимость UserRoleAssignmentService
-        // await this.userRoleAssignmentService.assignRole(
-        //   user.id,
-        //   invitation.roleId,
-        //   invitation.organizationId,
-        //   invitation.teamId,
-        //   invitation.invitedById,
-        // );
-        console.log(`✅ Роль ${invitation.roleId} назначена пользователю ${user.email} в контексте ${invitation.type === InvitationType.TEAM ? 'команды' : 'организации'}`);
+        // Проверяем, не назначена ли уже эта роль
+        const existingAssignment = await this.userRoleAssignmentRepo.findOne({
+          where: {
+            userId: user.id,
+            roleId: invitation.roleId,
+            organizationId: invitation.organizationId,
+            teamId: invitation.teamId
+          }
+        });
+
+        if (!existingAssignment) {
+          const userRoleAssignment = this.userRoleAssignmentRepo.create({
+            organizationId: invitation.organizationId,
+            teamId: invitation.teamId,
+            userId: user.id,
+            roleId: invitation.roleId,
+          });
+          await this.userRoleAssignmentRepo.save(userRoleAssignment);
+          console.log(`✅ Назначена роль из приглашения для ${user.email}`);
+        } else {
+          console.log(`ℹ️ Роль из приглашения уже назначена пользователю ${user.email}`);
+        }
       } catch (error) {
         console.error(`❌ Ошибка при назначении роли: ${error.message}`);
         // Не прерываем процесс, если назначение роли не удалось
+      }
+    } else {
+      // Если в приглашении не указана роль, назначаем базовую роль "viewer"
+      const viewerRole = await this.rolesRepo.findOne({ where: { name: 'viewer' } });
+      if (viewerRole) {
+        const existingViewerAssignment = await this.userRoleAssignmentRepo.findOne({
+          where: { 
+            userId: user.id, 
+            roleId: viewerRole.id,
+            organizationId: invitation.organizationId,
+            teamId: invitation.teamId
+          },
+        });
+
+        if (!existingViewerAssignment) {
+          const userRoleAssignment = this.userRoleAssignmentRepo.create({
+            organizationId: invitation.organizationId,
+            teamId: invitation.teamId,
+            userId: user.id,
+            roleId: viewerRole.id,
+          });
+          await this.userRoleAssignmentRepo.save(userRoleAssignment);
+          console.log(`✅ Назначена базовая роль viewer для ${user.email}`);
+        }
       }
     }
 
