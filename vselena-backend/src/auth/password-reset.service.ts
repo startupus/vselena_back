@@ -59,8 +59,8 @@ export class PasswordResetService {
     });
 
     // 5. Формируем ссылку для восстановления
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3002');
+    const resetLink = `${frontendUrl}/reset-password.html?token=${token}`;
 
     // 6. Отправляем email
     await this.emailService.sendPasswordResetEmail(user.email, resetLink);

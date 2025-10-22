@@ -42,7 +42,6 @@ export class InvitationsController {
   }
 
   @Get('handle')
-  @Public()
   @ApiOperation({ summary: 'Обработка умной ссылки приглашения' })
   @ApiResponse({ status: 200, description: 'Информация о приглашении' })
   @ApiResponse({ status: 404, description: 'Приглашение не найдено' })

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Final Roles Display</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .role-badge.team-role {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        .role-badge.org-role {
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #c4b5fd;
+        }
+        .test-container { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Final Test: Roles Display</h1>
+    <p>This test simulates the corrected roles after user transfer.</p>
+    
+    <div class="test-container">
+        <h3>Expected Result (After Transfer):</h3>
+        <div id="expected-roles">
+            <span class="role-badge org-role" title="Роль в организации">editor (1)</span>
+            <span class="role-badge team-role" title="Роль в команде">super_admin (Поддержка)</span>
+            <span class="role-badge team-role" title="Роль в команде">viewer (2)</span>
+        </div>
+        <p><strong>✅ Should NOT show:</strong> <span style="color: red;">admin (1)</span> - this role was removed during transfer</p>
+    </div>
+
+    <div class="test-container">
+        <h3>Test JavaScript Function:</h3>
+        <div id="test-result"></div>
+    </div>
+
+    <script>
+        // Simulate the corrected user data (after transfer)
+        const correctedUser = {
+            id: "1f7d40b2-92c8-4e25-b946-5bc9b029755f",
+            email: "saschkaproshka100@mail.ru",
+            firstName: "Владислав",
+            lastName: "казаков",
+            rolesByContext: {
+                organizations: [
+                    {
+                        role: "editor",
+                        organization: "1"
+                    }
+                ],
+                teams: [
+                    {
+                        role: "super_admin",
+                        team: "Поддержка"
+                    },
+                    {
+                        role: "viewer",
+                        team: "2"
+                    }
+                ]
+            }
+        };
+
+        // Test the display function
+        function displayUserRoles(user) {
+            const rolesHtml = user.rolesByContext ? 
+                [
+                    ...(user.rolesByContext.organizations || []).map(roleInfo => 
+                        `<span class="role-badge org-role" title="Роль в организации">
+                            ${roleInfo.role} (${roleInfo.organization})
+                        </span>`
+                    ),
+                    ...(user.rolesByContext.teams || []).map(roleInfo => 
+                        `<span class="role-badge team-role" title="Роль в команде">
+                            ${roleInfo.role} (${roleInfo.team})
+                        </span>`
+                    )
+                ].join('') :
+                `<span class="status-badge active">${user.role || 'viewer'}</span>`;
+
+            return rolesHtml;
+        }
+
+        // Test the function
+        const result = displayUserRoles(correctedUser);
+        document.getElementById('test-result').innerHTML = result;
+
+        console.log('✅ Test completed - roles should now display correctly without the old "admin (1)" role');
+    </script>
+</body>
+</html>

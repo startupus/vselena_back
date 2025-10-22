@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Roles Display</title>
+    <style>
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #3730a3;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .role-badge.team-role {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .role-badge.org-role {
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #c4b5fd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Roles Display</h1>
+    <div id="test-container"></div>
+
+    <script>
+        // Test data from API response
+        const testUser = {
+            id: "1f7d40b2-92c8-4e25-b946-5bc9b029755f",
+            email: "saschkaproshka100@mail.ru",
+            firstName: "Владислав",
+            lastName: "казаков",
+            rolesByContext: {
+                organizations: [
+                    {
+                        role: "editor",
+                        roleId: "131200fd-9efb-4a7b-aa87-361fe9bfad4f",
+                        assignedAt: "2025-10-21T15:12:57.902Z",
+                        organization: "1",
+                        organizationId: "fb9c97bf-3002-4bc1-8c28-7e6c0796213f"
+                    }
+                ],
+                teams: [
+                    {
+                        role: "super_admin",
+                        roleId: "4a6777c0-a132-403f-97cd-82a69b5674fa",
+                        assignedAt: "2025-10-21T14:29:48.466Z",
+                        team: "Поддержка",
+                        teamId: "f631effb-c3ef-45d8-b342-6c667a161665"
+                    },
+                    {
+                        role: "admin",
+                        roleId: "1fce1148-aee7-4681-8297-41a423b58499",
+                        assignedAt: "2025-10-21T15:12:17.473Z",
+                        team: "1",
+                        teamId: "0b712b6b-5f63-4681-81ca-692e4433b5c8"
+                    },
+                    {
+                        role: "viewer",
+                        roleId: "63adfb0a-6c57-4294-94bd-feb6a3ac9976",
+                        assignedAt: "2025-10-21T15:12:40.899Z",
+                        team: "2",
+                        teamId: "c0d70d9c-c65a-463e-9fb0-4259f0df170f"
+                    }
+                ]
+            }
+        };
+
+        function displayUserRoles(user) {
+            const container = document.getElementById('test-container');
+            
+            const rolesHtml = user.rolesByContext ? 
+                [
+                    ...(user.rolesByContext.organizations || []).map(roleInfo => 
+                        `<span class="role-badge org-role" title="Роль в организации">
+                            ${roleInfo.role} (${roleInfo.organization})
+                        </span>`
+                    ),
+                    ...(user.rolesByContext.teams || []).map(roleInfo => 
+                        `<span class="role-badge team-role" title="Роль в команде">
+                            ${roleInfo.role} (${roleInfo.team})
+                        </span>`
+                    )
+                ].join('') :
+                `<span class="status-badge active">${user.role || 'viewer'}</span>`;
+
+            container.innerHTML = `
+                <div style="border: 1px solid #ccc; padding: 20px; margin: 20px 0;">
+                    <h3>${user.firstName} ${user.lastName}</h3>
+                    <p>Email: ${user.email}</p>
+                    <div>
+                        <strong>Роли:</strong><br>
+                        ${rolesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Test the display
+        displayUserRoles(testUser);
+    </script>
+</body>
+</html>

@@ -7,8 +7,13 @@ const API_BASE_URL = (() => {
         return 'http://localhost:3001';
     }
     
-    // Иначе используем текущий домен
-    return window.location.origin;
+    // Если это IP адрес - используем порт 3001
+    if (hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        return `${window.location.protocol}//${window.location.hostname}:3001`;
+    }
+    
+    // Для домена используем тот же протокол и хост (nginx проксирует на /api/)
+    return `${window.location.protocol}//${window.location.hostname}`;
 })();
 
 console.log('API Base URL:', API_BASE_URL);

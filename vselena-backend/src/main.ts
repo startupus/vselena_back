@@ -20,7 +20,7 @@ async function bootstrap() {
       'http://localhost:3002',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3002',
-      'http://45.144.176.42:3000',
+      'https://vselena.ldmco.ru',
       'http://45.144.176.42:3002',
       'https://vselena.ldmco.ru',
       'http://vselena.ldmco.ru'

@@ -423,6 +423,66 @@
             color: #991b1b;
         }
 
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: #e0e7ff;
+            color: #3730a3;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .role-badge.team-role {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .role-badge.org-role {
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #c4b5fd;
+        }
+
+        .team-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .org-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #c4b5fd;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .member-details {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
         /* Buttons */
         .btn {
             display: inline-flex;
@@ -1437,9 +1497,9 @@
                     <textarea id="teamDescription" name="description" rows="3" placeholder="Описание команды (необязательно)"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="teamOrganization">Организация</label>
-                    <select id="teamOrganization" name="organizationId">
-                        <option value="">Без организации</option>
+                    <label for="teamOrganization">Организация *</label>
+                    <select id="teamOrganization" name="organizationId" required>
+                        <option value="">Выберите организацию</option>
                     </select>
                 </div>
                 <div class="form-actions">
@@ -1483,6 +1543,12 @@
                     <label for="inviteTeam">Команда *</label>
                     <select id="inviteTeam" name="teamId">
                         <option value="">Выберите команду</option>
+                    </select>
+                </div>
+                <div class="form-group" id="inviteRoleGroup" style="display: none;">
+                    <label for="inviteRole">Роль в команде/организации *</label>
+                    <select id="inviteRole" name="roleId">
+                        <option value="">Выберите роль</option>
                     </select>
                 </div>
                 <div class="form-actions">
@@ -1534,6 +1600,99 @@
                         <span id="editUserLoading" class="loading hidden"></span>
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно переноса пользователя между командами -->
+    <div id="transferUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Перенести сотрудника между командами</h2>
+                <button class="modal-close" onclick="closeTransferUserModal()">&times;</button>
+            </div>
+            <form id="transferUserForm" method="POST">
+                <input type="hidden" id="transferUserId" name="userId">
+                <div class="form-group">
+                    <label for="transferUserEmail">Email сотрудника</label>
+                    <input type="email" id="transferUserEmail" name="email" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="transferFromTeam">Из команды</label>
+                    <select id="transferFromTeam" name="fromTeamId" required>
+                        <option value="">Выберите команду</option>
+                    </select>
+                    <small class="form-text text-muted">Выберите команду, из которой переносится сотрудник</small>
+                </div>
+                <div class="form-group">
+                    <label for="transferToTeam">В команду</label>
+                    <select id="transferToTeam" name="toTeamId" required>
+                        <option value="">Выберите команду</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transferUserRole">Роль в новой команде</label>
+                    <select id="transferUserRole" name="roleId" required>
+                        <option value="">Выберите роль</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="transferUserBtn">
+                        <span id="transferUserText">Перенести</span>
+                        <span id="transferUserLoading" class="loading" style="display: none;">⏳</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeTransferUserModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change User Role Modal -->
+    <div id="changeUserRoleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Изменить роль сотрудника</h2>
+                <button class="modal-close" onclick="closeChangeUserRoleModal()">&times;</button>
+            </div>
+            <form id="changeUserRoleForm" method="POST">
+                <input type="hidden" id="changeUserRoleUserId" name="userId">
+                <div class="form-group">
+                    <label for="changeUserRoleEmail">Email сотрудника</label>
+                    <input type="email" id="changeUserRoleEmail" name="email" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="changeUserRoleContext">Контекст</label>
+                    <select id="changeUserRoleContext" name="context" required>
+                        <option value="">Выберите контекст</option>
+                        <option value="organization">Организация</option>
+                        <option value="team">Команда</option>
+                    </select>
+                </div>
+                <div class="form-group" id="changeUserRoleOrganizationGroup" style="display: none;">
+                    <label for="changeUserRoleOrganization">Организация</label>
+                    <select id="changeUserRoleOrganization" name="organizationId">
+                        <option value="">Выберите организацию</option>
+                    </select>
+                </div>
+                <div class="form-group" id="changeUserRoleTeamGroup" style="display: none;">
+                    <label for="changeUserRoleTeam">Команда</label>
+                    <select id="changeUserRoleTeam" name="teamId">
+                        <option value="">Выберите команду</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="changeUserRoleNewRole">Новая роль</label>
+                    <select id="changeUserRoleNewRole" name="roleId" required>
+                        <option value="">Выберите роль</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="changeUserRoleBtn">
+                        <span id="changeUserRoleText">Изменить роль</span>
+                        <span id="changeUserRoleLoading" class="loading" style="display: none;">⏳</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeChangeUserRoleModal()">Отмена</button>
                 </div>
             </form>
         </div>
@@ -1591,24 +1750,6 @@
                 item.addEventListener('click', async function(e) {
                     e.preventDefault();
                     const section = this.dataset.section;
-
-                    // Guarded sections requiring permissions
-                    const sectionPermissions = {
-                        'organizations': 'settings.update',
-                        'teams': 'teams.members',
-                        // Требуем более высокий доступ для раздела "Сотрудники"
-                        'users': 'users.update',
-                    };
-
-                    const required = sectionPermissions[section];
-                    if (required) {
-                        const user = JSON.parse(localStorage.getItem('userData') || '{}');
-                        const perms = user.permissions || [];
-                        if (!perms.includes(required)) {
-                            showNotification('Недостаточно прав для доступа к разделу', 'error');
-                            return;
-                        }
-                    }
 
                     showSection(section);
 
@@ -1811,9 +1952,32 @@
                         </div>
                     </td>
                     <td>
-                        <span class="status-badge active">${user.roles?.[0]?.name || 'viewer'}</span>
+                        ${user.rolesByContext ? 
+                            [
+                                ...(user.rolesByContext.organizations || []).map(roleInfo => 
+                                    `<span class="role-badge org-role" title="Роль в организации">
+                                        ${roleInfo.role} (${roleInfo.organization})
+                                    </span>`
+                                ),
+                                ...(user.rolesByContext.teams || []).map(roleInfo => 
+                                    `<span class="role-badge team-role" title="Роль в команде">
+                                        ${roleInfo.role} (${roleInfo.team})
+                                    </span>`
+                                )
+                            ].join('') :
+                            `<span class="status-badge active">${user.role || 'viewer'}</span>`
+                        }
                     </td>
-                            <td>${user.teams && user.teams.length > 0 ? user.teams[0].name : 'Не назначена'}</td>
+                            <td>
+                                ${user.teams && user.teams.length > 0 ? 
+                                    user.teams.map(team => `<span class="team-badge">${team.name}</span>`).join(' ') : 
+                                    'Не назначена'
+                                }
+                                ${user.organizations && user.organizations.length > 0 ? 
+                                    user.organizations.map(org => `<span class="org-badge">🏢 ${org.name}</span>`).join(' ') : 
+                                    ''
+                                }
+                            </td>
                     <td>
                         <span class="status-badge ${user.isActive ? 'active' : 'inactive'}">
                             ${user.isActive ? 'Активен' : 'Неактивен'}
@@ -1822,6 +1986,12 @@
                     <td>
                         <button class="btn btn-secondary" onclick="editUser('${user.id}')">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-warning" onclick="changeUserRole('${user.id}')" title="Изменить роль">
+                            <i class="fas fa-user-tag"></i>
+                        </button>
+                        <button class="btn btn-info" onclick="transferUser('${user.id}')" title="Перенести между командами">
+                            <i class="fas fa-exchange-alt"></i>
                         </button>
                         <button class="btn btn-danger" onclick="deleteUser('${user.id}')">
                             <i class="fas fa-trash"></i>
@@ -1941,9 +2111,12 @@
                                             <div class="member-info">
                                                 <h4>${member.firstName || ''} ${member.lastName || ''}</h4>
                                                 <p>${member.email}</p>
-                                                <span class="status-badge ${member.isActive ? 'active' : 'inactive'}">
-                                                    ${member.isActive ? 'Активен' : 'Неактивен'}
-                                                </span>
+                                                <div class="member-details">
+                                                    <span class="role-badge">${member.role || 'viewer'}</span>
+                                                    <span class="status-badge ${member.isActive ? 'active' : 'inactive'}">
+                                                        ${member.isActive ? 'Активен' : 'Неактивен'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     `).join('') :
@@ -2008,6 +2181,89 @@
             }
         }
 
+        // View organization members
+        async function viewOrganizationMembers(organizationId) {
+            try {
+                const response = await apiCall(`/api/organizations/${organizationId}/members`, { method: 'GET' });
+                const members = Array.isArray(response) ? response : (response.members || response.data || []);
+
+                // Создаем модальное окно для отображения участников организации
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Участники организации</h2>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="members-list">
+                                ${members.length > 0 ? 
+                                    members.map(member => `
+                                        <div class="member-item">
+                                            <div class="user-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                                ${member.firstName ? member.firstName[0] : member.email[0].toUpperCase()}
+                                            </div>
+                                            <div class="member-details">
+                                                <h4>${member.firstName || ''} ${member.lastName || ''}</h4>
+                                                <p>${member.email}</p>
+                                                <span class="role-badge">${member.role || 'viewer'}</span>
+                                            </div>
+                                        </div>
+                                    `).join('') :
+                                    '<p>В организации пока нет участников</p>'
+                                }
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Закрыть</button>
+                        </div>
+                    </div>
+                `;
+
+                // Добавляем стили для модального окна
+                const style = document.createElement('style');
+                style.textContent = `
+                    .members-list {
+                        max-height: 400px;
+                        overflow-y: auto;
+                    }
+                    .member-item {
+                        display: flex;
+                        align-items: center;
+                        padding: 1rem;
+                        border-bottom: 1px solid #e5e7eb;
+                    }
+                    .member-item:last-child {
+                        border-bottom: none;
+                    }
+                    .member-details {
+                        margin-left: 1rem;
+                        flex: 1;
+                    }
+                    .member-details h4 {
+                        margin: 0 0 0.25rem 0;
+                        font-size: 1rem;
+                        font-weight: 600;
+                    }
+                    .member-details p {
+                        margin: 0 0 0.5rem 0;
+                        color: #6b7280;
+                        font-size: 0.875rem;
+                    }
+                `;
+                document.head.appendChild(style);
+
+                document.body.appendChild(modal);
+                
+                // Показываем модальное окно
+                modal.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading organization members:', error);
+                showNotification('Ошибка загрузки участников организации', 'error');
+            }
+        }
+
         // Display organizations
         function displayOrganizations(organizations) {
             const tbody = document.getElementById('organizationsTableBody');
@@ -2035,8 +2291,8 @@
                     </td>
                     <td>${org.creator?.firstName || ''} ${org.creator?.lastName || ''}</td>
                     <td>
-                        <button class="btn btn-secondary" onclick="editOrganization('${org.id}')">
-                            <i class="fas fa-edit"></i>
+                        <button class="btn btn-info" onclick="viewOrganizationMembers('${org.id}')" title="Просмотр участников">
+                            <i class="fas fa-users"></i>
                         </button>
                         <button class="btn btn-danger" onclick="deleteOrganization('${org.id}')">
                             <i class="fas fa-trash"></i>
@@ -2368,7 +2624,19 @@
                     showNotification(msg, 'error');
                     throw new Error('Forbidden');
                 }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                
+                // Try to get error message from response
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use default message
+                }
+                
+                throw new Error(errorMessage);
             }
 
             return await response.json();
@@ -2443,6 +2711,42 @@
             document.getElementById('editUserModal').style.display = 'block';
         }
 
+        function transferUser(userId) {
+            // Найти пользователя в текущем списке
+            const user = currentUsersList.find(u => u.id === userId);
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+
+            // Заполнить форму переноса
+            document.getElementById('transferUserId').value = user.id;
+            document.getElementById('transferUserEmail').value = user.email;
+
+            // Загрузить команды для переноса
+            loadTeamsForTransfer();
+
+            // Установить текущие команды пользователя
+            const currentTeams = user.teams || [];
+            const teamSelect = document.getElementById('transferFromTeam');
+            const toTeamSelect = document.getElementById('transferToTeam');
+            
+            // Очистить предыдущие опции
+            teamSelect.innerHTML = '<option value="">Выберите команду</option>';
+            toTeamSelect.innerHTML = '<option value="">Выберите команду</option>';
+
+            // Добавить текущие команды в "Откуда"
+            currentTeams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.id;
+                option.textContent = team.name;
+                teamSelect.appendChild(option);
+            });
+
+            // Показать модальное окно
+            document.getElementById('transferUserModal').style.display = 'block';
+        }
+
         async function deleteUser(userId) {
             if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
                 return;
@@ -2456,8 +2760,9 @@
 
                 showNotification('Пользователь удален успешно', 'success');
                 
-                // Перезагружаем список пользователей
+                // Перезагружаем список пользователей и приглашений
                 await loadUsers();
+                await loadInvitations();
             } catch (error) {
                 console.error('Error deleting user:', error);
                 showNotification('Ошибка удаления пользователя: ' + error.message, 'error');
@@ -2489,6 +2794,26 @@
             }
         }
 
+        async function loadTeamsForTransfer() {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                const teams = Array.isArray(response) ? response : (response.teams || response.data || []);
+                
+                const toTeamSelect = document.getElementById('transferToTeam');
+                toTeamSelect.innerHTML = '<option value="">Выберите команду</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    toTeamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams for transfer:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
         async function loadOrganizationsForEdit() {
             try {
                 const response = await apiCall('/api/organizations', { method: 'GET' });
@@ -2506,6 +2831,274 @@
             } catch (error) {
                 console.error('Error loading organizations for edit:', error);
                 showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        // Функции для модального окна переноса пользователя
+        function closeTransferUserModal() {
+            document.getElementById('transferUserModal').style.display = 'none';
+        }
+
+        function transferUser(userId) {
+            const user = currentUsersList.find(u => u.id === userId);
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+
+            // Заполняем данные пользователя
+            document.getElementById('transferUserId').value = user.id;
+            document.getElementById('transferUserEmail').value = user.email;
+
+            // Загружаем команды и роли
+            loadTeamsForTransfer(user);
+            loadRolesForTransfer();
+
+            // Показываем модальное окно
+            document.getElementById('transferUserModal').style.display = 'block';
+        }
+
+        // Change User Role Functions
+        function closeChangeUserRoleModal() {
+            document.getElementById('changeUserRoleModal').style.display = 'none';
+        }
+
+        function changeUserRole(userId) {
+            const user = currentUsersList.find(u => u.id === userId);
+            if (!user) {
+                showNotification('Пользователь не найден', 'error');
+                return;
+            }
+
+            // Заполняем данные пользователя
+            document.getElementById('changeUserRoleUserId').value = user.id;
+            document.getElementById('changeUserRoleEmail').value = user.email;
+
+            // Загружаем роли
+            loadRolesForChangeRole();
+
+            // Показываем модальное окно
+            document.getElementById('changeUserRoleModal').style.display = 'block';
+        }
+
+        async function loadTeamsForTransfer(user) {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                const teams = Array.isArray(response) ? response : (response.teams || response.data || []);
+                
+                const fromTeamSelect = document.getElementById('transferFromTeam');
+                const toTeamSelect = document.getElementById('transferToTeam');
+                
+                // Очищаем селекты
+                fromTeamSelect.innerHTML = '<option value="">Выберите команду</option>';
+                toTeamSelect.innerHTML = '<option value="">Выберите команду</option>';
+                
+                // Получаем текущие команды пользователя
+                const userTeams = user.teams || [];
+                const userTeamIds = userTeams.map(team => team.id);
+                
+                console.log(`🔍 User ${user.email} is in teams:`, userTeamIds);
+                
+                teams.forEach(team => {
+                    // Для "Из команды" - показываем только команды, где состоит пользователь
+                    if (userTeamIds.includes(team.id)) {
+                        const fromOption = document.createElement('option');
+                        fromOption.value = team.id;
+                        fromOption.textContent = team.name;
+                        fromTeamSelect.appendChild(fromOption);
+                    }
+                    
+                    // Для "В команду" - показываем команды, где НЕ состоит пользователь
+                    if (!userTeamIds.includes(team.id)) {
+                        const toOption = document.createElement('option');
+                        toOption.value = team.id;
+                        toOption.textContent = team.name;
+                        toTeamSelect.appendChild(toOption);
+                    }
+                });
+                
+                // Если пользователь состоит только в одной команде - автоматически выбираем её
+                if (userTeamIds.length === 1) {
+                    fromTeamSelect.value = userTeamIds[0];
+                }
+                // Если пользователь состоит в нескольких командах - не выбираем автоматически
+                // Пользователь должен сам выбрать, из какой команды переносить
+                
+                console.log(`✅ Loaded ${fromTeamSelect.children.length - 1} source teams and ${toTeamSelect.children.length - 1} destination teams`);
+            } catch (error) {
+                console.error('Error loading teams for transfer:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        async function loadRolesForTransfer() {
+            try {
+                const response = await apiCall('/api/roles', { method: 'GET' });
+                const roles = Array.isArray(response) ? response : (response.roles || response.data || []);
+                
+                const roleSelect = document.getElementById('transferUserRole');
+                roleSelect.innerHTML = '<option value="">Выберите роль</option>';
+                
+                roles.forEach(role => {
+                    const option = document.createElement('option');
+                    option.value = role.id;
+                    option.textContent = `${role.name} - ${role.description || ''}`;
+                    roleSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading roles for transfer:', error);
+                showNotification('Ошибка загрузки ролей', 'error');
+            }
+        }
+
+        async function loadRolesForChangeRole() {
+            try {
+                const response = await apiCall('/api/roles', { method: 'GET' });
+                const roles = Array.isArray(response) ? response : (response.roles || response.data || []);
+                
+                const roleSelect = document.getElementById('changeUserRoleNewRole');
+                roleSelect.innerHTML = '<option value="">Выберите роль</option>';
+                
+                roles.forEach(role => {
+                    const option = document.createElement('option');
+                    option.value = role.id;
+                    option.textContent = `${role.name} - ${role.description || ''}`;
+                    roleSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading roles for change role:', error);
+                showNotification('Ошибка загрузки ролей', 'error');
+            }
+        }
+
+        async function loadOrganizationsForChangeRole() {
+            try {
+                const response = await apiCall('/api/organizations', { method: 'GET' });
+                const organizations = Array.isArray(response) ? response : (response.organizations || response.data || []);
+                
+                const orgSelect = document.getElementById('changeUserRoleOrganization');
+                orgSelect.innerHTML = '<option value="">Выберите организацию</option>';
+                
+                organizations.forEach(org => {
+                    const option = document.createElement('option');
+                    option.value = org.id;
+                    option.textContent = org.name;
+                    orgSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading organizations for change role:', error);
+                showNotification('Ошибка загрузки организаций', 'error');
+            }
+        }
+
+        async function loadTeamsForChangeRole() {
+            try {
+                const response = await apiCall('/api/teams', { method: 'GET' });
+                const teams = Array.isArray(response) ? response : (response.teams || response.data || []);
+                
+                const teamSelect = document.getElementById('changeUserRoleTeam');
+                teamSelect.innerHTML = '<option value="">Выберите команду</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams for change role:', error);
+                showNotification('Ошибка загрузки команд', 'error');
+            }
+        }
+
+        async function transferUserSubmit() {
+            const userId = document.getElementById('transferUserId').value;
+            const fromTeamId = document.getElementById('transferFromTeam').value;
+            const toTeamId = document.getElementById('transferToTeam').value;
+            const roleId = document.getElementById('transferUserRole').value;
+
+            if (!userId || !fromTeamId || !toTeamId || !roleId) {
+                showNotification('Заполните все поля', 'error');
+                return;
+            }
+
+            if (fromTeamId === toTeamId) {
+                showNotification('Команды должны быть разными', 'error');
+                return;
+            }
+
+            try {
+                showLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+
+                await apiCall(`/api/users/${userId}/transfer-team`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        fromTeamId: fromTeamId,
+                        toTeamId: toTeamId,
+                        roleId: roleId
+                    })
+                });
+
+                hideLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+                showNotification('Пользователь успешно перенесен', 'success');
+                closeTransferUserModal();
+                loadUsers(); // Перезагружаем список пользователей
+            } catch (error) {
+                hideLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+                console.error('Error transferring user:', error);
+                showNotification('Ошибка переноса пользователя: ' + error.message, 'error');
+            }
+        }
+
+        // Change User Role Submit
+        async function changeUserRoleSubmit() {
+            const userId = document.getElementById('changeUserRoleUserId').value;
+            const context = document.getElementById('changeUserRoleContext').value;
+            const organizationId = document.getElementById('changeUserRoleOrganization').value;
+            const teamId = document.getElementById('changeUserRoleTeam').value;
+            const roleId = document.getElementById('changeUserRoleNewRole').value;
+
+            if (!userId || !context || !roleId) {
+                showNotification('Заполните все обязательные поля', 'error');
+                return;
+            }
+
+            if (context === 'organization' && !organizationId) {
+                showNotification('Выберите организацию', 'error');
+                return;
+            }
+
+            if (context === 'team' && !teamId) {
+                showNotification('Выберите команду', 'error');
+                return;
+            }
+
+            try {
+                showLoading('changeUserRoleBtn', 'changeUserRoleText', 'changeUserRoleLoading');
+
+                const requestBody = {
+                    roleId: roleId
+                };
+
+                if (context === 'organization') {
+                    requestBody.organizationId = organizationId;
+                } else if (context === 'team') {
+                    requestBody.teamId = teamId;
+                }
+
+                await apiCall(`/api/users/${userId}/change-role`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(requestBody)
+                });
+
+                hideLoading('changeUserRoleBtn', 'changeUserRoleText', 'changeUserRoleLoading');
+                showNotification('Роль пользователя успешно изменена', 'success');
+                closeChangeUserRoleModal();
+                loadUsers(); // Перезагружаем список пользователей
+            } catch (error) {
+                hideLoading('changeUserRoleBtn', 'changeUserRoleText', 'changeUserRoleLoading');
+                console.error('Error changing user role:', error);
+                showNotification('Ошибка изменения роли: ' + error.message, 'error');
             }
         }
 
@@ -2577,6 +3170,50 @@
             }
         }
 
+        async function transferUserSubmit() {
+            const userId = document.getElementById('transferUserId').value;
+            const fromTeamId = document.getElementById('transferFromTeam').value;
+            const toTeamId = document.getElementById('transferToTeam').value;
+
+            if (!userId) {
+                showNotification('Ошибка: ID пользователя не найден', 'error');
+                return;
+            }
+
+            if (!fromTeamId && !toTeamId) {
+                showNotification('Выберите команду для переноса', 'error');
+                return;
+            }
+
+            try {
+                showLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+
+                console.log('Transferring user:', userId, 'from:', fromTeamId, 'to:', toTeamId);
+                await apiCall(`/api/users/${userId}/transfer-team`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ 
+                        fromTeamId: fromTeamId || null, 
+                        toTeamId: toTeamId || null 
+                    })
+                });
+
+                hideLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+                showNotification('Пользователь успешно перенесен', 'success');
+                closeTransferUserModal();
+                
+                // Перезагружаем список пользователей
+                console.log('Reloading users after transfer...');
+                await loadUsers();
+            } catch (error) {
+                hideLoading('transferUserBtn', 'transferUserText', 'transferUserLoading');
+                console.error('Error transferring user:', error);
+                showNotification('Ошибка переноса пользователя: ' + error.message, 'error');
+            }
+        }
+
+        function closeTransferUserModal() {
+            document.getElementById('transferUserModal').style.display = 'none';
+        }
 
         function editOrganization(orgId) {
             showNotification('Функция редактирования организации в разработке', 'warning');
@@ -2647,6 +3284,38 @@
                 await saveUserChanges();
             });
 
+            // Transfer user form
+            document.getElementById('transferUserForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await transferUserSubmit();
+            });
+
+            // Change user role form
+            document.getElementById('changeUserRoleForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await changeUserRoleSubmit();
+            });
+
+            // Change User Role Context Handler
+            document.getElementById('changeUserRoleContext')?.addEventListener('change', function() {
+                const context = this.value;
+                const orgGroup = document.getElementById('changeUserRoleOrganizationGroup');
+                const teamGroup = document.getElementById('changeUserRoleTeamGroup');
+
+                if (context === 'organization') {
+                    orgGroup.style.display = 'block';
+                    teamGroup.style.display = 'none';
+                    loadOrganizationsForChangeRole();
+                } else if (context === 'team') {
+                    orgGroup.style.display = 'none';
+                    teamGroup.style.display = 'block';
+                    loadTeamsForChangeRole();
+                } else {
+                    orgGroup.style.display = 'none';
+                    teamGroup.style.display = 'none';
+                }
+            });
+
             // Close modals when clicking outside
             window.addEventListener('click', function(e) {
                 if (e.target.classList.contains('modal')) {
@@ -2686,7 +3355,16 @@
                 }
             } catch (error) {
                 console.error('Ошибка создания организации:', error);
-                showNotification('Ошибка создания организации: ' + error.message, 'error');
+                console.log('Error details:', error);
+                
+                // Проверяем разные варианты сообщения об ошибке
+                const errorMessage = error.message || error.error || error.toString();
+                if (errorMessage.includes('уже создали организацию') || 
+                    errorMessage.includes('Один пользователь может создать только одну организацию')) {
+                    showNotification('Вы уже создали организацию. Один пользователь может создать только одну организацию.', 'error');
+                } else {
+                    showNotification('Ошибка создания организации: ' + errorMessage, 'error');
+                }
             } finally {
                 hideLoading('createOrgBtn', 'createOrgText', 'createOrgLoading');
             }
@@ -2738,7 +3416,7 @@
             try {
                 const response = await apiCall('/api/organizations', { method: 'GET' });
                 const select = document.getElementById('teamOrganization');
-                select.innerHTML = '<option value="">Без организации</option>';
+                select.innerHTML = '<option value="">Выберите организацию</option>';
                 
                 // Handle both array and object responses
                 const organizations = Array.isArray(response) ? response : (response?.organizations || []);
@@ -2805,27 +3483,61 @@
             }
         }
 
+        // Load roles for invitation
+        async function loadRolesForInvite(type) {
+            try {
+                const response = await apiCall('/api/roles', {
+                    method: 'GET'
+                });
+                
+                if (response && response.length > 0) {
+                    const roleSelect = document.getElementById('inviteRole');
+                    roleSelect.innerHTML = '<option value="">Выберите роль</option>';
+                    
+                    // Показываем все роли - они универсальные
+                    response.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.id;
+                        option.textContent = role.name + ' - ' + role.description;
+                        roleSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading roles:', error);
+                showNotification('Ошибка загрузки ролей', 'error');
+            }
+        }
+
         // Toggle invite target based on type
         function toggleInviteTarget() {
             const type = document.getElementById('inviteType').value;
             const orgGroup = document.getElementById('inviteOrganizationGroup');
             const teamGroup = document.getElementById('inviteTeamGroup');
+            const roleGroup = document.getElementById('inviteRoleGroup');
             
             if (type === 'organization') {
                 orgGroup.style.display = 'block';
                 teamGroup.style.display = 'none';
+                roleGroup.style.display = 'block';
                 document.getElementById('inviteOrganization').required = true;
                 document.getElementById('inviteTeam').required = false;
+                document.getElementById('inviteRole').required = true;
+                loadRolesForInvite('organization');
             } else if (type === 'team') {
                 orgGroup.style.display = 'none';
                 teamGroup.style.display = 'block';
+                roleGroup.style.display = 'block';
                 document.getElementById('inviteOrganization').required = false;
                 document.getElementById('inviteTeam').required = true;
+                document.getElementById('inviteRole').required = true;
+                loadRolesForInvite('team');
             } else {
                 orgGroup.style.display = 'none';
                 teamGroup.style.display = 'none';
+                roleGroup.style.display = 'none';
                 document.getElementById('inviteOrganization').required = false;
                 document.getElementById('inviteTeam').required = false;
+                document.getElementById('inviteRole').required = false;
             }
         }
 
@@ -2868,6 +3580,14 @@
                 formData.teamId = teamId;
             }
 
+            // Add role
+            const roleId = document.getElementById('inviteRole').value;
+            if (!roleId) {
+                showNotification('Выберите роль', 'error');
+                return;
+            }
+            formData.roleId = roleId;
+
             try {
                 showLoading('inviteUserBtn', 'inviteUserText', 'inviteUserLoading');
 
@@ -2893,6 +3613,12 @@
                     
                     showNotification('Приглашение отправлено успешно!', 'success');
                     closeInviteUserModal();
+                    
+                    // Обновляем список приглашений И приглашенных пользователей
+                    console.log('🔄 Обновляем списки после отправки...');
+                    await loadInvitations();
+                    await loadInvitedUsers(); // Добавляем обновление приглашенных пользователей
+                    console.log('✅ Списки обновлены');
                 }
             } catch (error) {
                 console.error('Ошибка отправки приглашения:', error);
@@ -2906,6 +3632,12 @@
         async function loadInvitations() {
             console.log('loadInvitations called');
             try {
+                // Принудительно очищаем контейнер перед загрузкой
+                const container = document.getElementById('invitationsContainer');
+                if (container) {
+                    container.innerHTML = '<div class="loading-placeholder">Загрузка приглашений...</div>';
+                }
+                
                 const response = await apiCall('/api/invitations/my', { method: 'GET' });
                 console.log('Invitations response:', response);
                 console.log('Response type:', typeof response);
@@ -2920,9 +3652,11 @@
 
         // Display invitations
         function displayInvitations(invitations) {
-            console.log('displayInvitations called with:', invitations);
+            console.log('🎨 DISPLAY_INVITATIONS вызвана с:', invitations);
+            console.log('📊 Количество приглашений:', invitations ? invitations.length : 'null');
             const container = document.getElementById('invitationsContainer');
-            console.log('Container found:', !!container);
+            console.log('📦 Контейнер найден:', !!container);
+            console.log('📦 Текущее содержимое контейнера:', container ? container.innerHTML.length : 'null');
             
             // Handle different response formats
             let invitationList = invitations;
@@ -2953,7 +3687,13 @@
             container.style.visibility = 'visible';
             container.style.opacity = '1';
 
-            container.innerHTML = invitationList.map(invitation => `
+            // Принудительно очищаем контейнер перед обновлением
+            container.innerHTML = '';
+            
+            // Небольшая задержка для принудительного обновления DOM
+            setTimeout(() => {
+                console.log('🎨 Рендерим приглашения, количество:', invitationList.length);
+                container.innerHTML = invitationList.map(invitation => `
                 <div class="invitation-item" style="
                     border: 1px solid #E5E7EB;
                     border-radius: 12px;
@@ -3013,6 +3753,8 @@
                     </div>
                 </div>
             `).join('');
+                console.log('✅ Приглашения отрендерены, длина HTML:', container.innerHTML.length);
+            }, 10); // Небольшая задержка для принудительного обновления DOM
         }
 
         // Get invitation status class
@@ -3067,15 +3809,32 @@
             }
 
             try {
-                console.log('Cancelling invitation:', invitationId);
+                console.log('🚨 ОТМЕНА ПРИГЛАШЕНИЯ:', invitationId);
+                console.log('📧 Контейнер до удаления:', document.getElementById('invitationsContainer').innerHTML.length);
+                
                 await apiCall(`/api/invitations/${invitationId}`, {
                     method: 'DELETE'
                 });
 
+                console.log('✅ Приглашение удалено с сервера');
                 showNotification('Приглашение отменено', 'success');
                 
-                // Reload invitations
-                await loadInvitations();
+                // Принудительно очищаем контейнер и перезагружаем
+                const container = document.getElementById('invitationsContainer');
+                if (container) {
+                    console.log('🧹 Очищаем контейнер...');
+                    container.innerHTML = '<div class="loading-placeholder">Обновление списка...</div>';
+                    console.log('📧 Контейнер после очистки:', container.innerHTML);
+                }
+                
+                // Небольшая задержка перед перезагрузкой
+                setTimeout(async () => {
+                    console.log('🔄 Перезагружаем приглашения и приглашенных пользователей...');
+                    await loadInvitations();
+                    await loadInvitedUsers(); // Добавляем обновление приглашенных пользователей
+                    console.log('✅ Списки перезагружены');
+                }, 100);
+                
             } catch (error) {
                 console.error('Ошибка отмены приглашения:', error);
                 showNotification('Ошибка отмены приглашения: ' + error.message, 'error');
@@ -3288,6 +4047,8 @@
                 }
                 
                 // Set security settings
+                console.log('🔍 2FA Status from server:', user.twoFactorEnabled);
+                console.log('🔍 Full user data:', user);
                 document.getElementById('twoFactorEnabled').checked = user.twoFactorEnabled || false;
                 
             } catch (error) {
@@ -3350,18 +4111,30 @@
         // Verify email
         async function verifyEmail() {
             try {
-                await apiCall('/api/auth/2fa/email/send-code', {
+                console.log('🎯 DASHBOARD: Вызываем новый endpoint для отправки письма с кнопкой');
+                console.log('📧 Email:', document.getElementById('email').value);
+                
+                const response = await apiCall('/api/auth/email-verification/send-button', {
                     method: 'POST',
                     body: JSON.stringify({ email: document.getElementById('email').value })
                 });
                 
-                showNotification('Код подтверждения отправлен на вашу почту', 'success');
-                
-                // Show verification dialog
-                const code = prompt('Введите код подтверждения, отправленный на вашу почту:');
-                if (code) {
-                    await verifyEmailCode(code);
+                // Показываем сообщение в зависимости от ответа сервера
+                if (response.success) {
+                    if (response.message === 'Email уже подтвержден') {
+                        showNotification('Email уже подтвержден', 'info');
+                    } else {
+                        showNotification('Письмо с кнопкой подтверждения отправлено на вашу почту', 'success');
+                    }
+                } else {
+                    showNotification(response.message || 'Ошибка отправки письма', 'error');
                 }
+                
+                // НЕ показываем диалог ввода кода - письмо содержит кнопку
+                // const code = prompt('Введите код подтверждения, отправленный на вашу почту:');
+                // if (code) {
+                //     await verifyEmailCode(code);
+                // }
             } catch (error) {
                 console.error('Ошибка отправки кода:', error);
                 showNotification('Ошибка отправки кода: ' + error.message, 'error');

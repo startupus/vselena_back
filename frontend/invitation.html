@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработка приглашения - Vselena</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #667eea;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .invitation-info {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .invitation-info h3 {
+            color: #1e293b;
+            margin-top: 0;
+        }
+        
+        .invitation-info p {
+            color: #475569;
+            margin: 5px 0;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Vselena</div>
+        <div class="subtitle">Система управления базой знаний</div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span>Обрабатываем приглашение...</span>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div id="invitation-info" class="invitation-info" style="display: none;">
+                <h3>🎉 Вас пригласили!</h3>
+                <p><strong>Email:</strong> <span id="invitation-email"></span></p>
+                <p><strong>Тип:</strong> <span id="invitation-type"></span></p>
+                <p><strong>Организация/Команда:</strong> <span id="invitation-target"></span></p>
+                <p><strong>Пригласил:</strong> <span id="invitation-inviter"></span></p>
+                <p><strong>Срок действия:</strong> <span id="invitation-expires"></span></p>
+            </div>
+            
+            <div id="error" class="error" style="display: none;">
+                <h3>❌ Ошибка</h3>
+                <p id="error-message"></p>
+            </div>
+            
+            <div id="success" class="success" style="display: none;">
+                <h3>✅ Успешно</h3>
+                <p id="success-message"></p>
+            </div>
+            
+            <div id="actions" style="display: none;">
+                <a href="#" id="redirect-btn" class="btn">Перейти</a>
+                <button onclick="window.close()" class="btn" style="background: #64748b;">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Получаем токен из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+            showError('Токен приглашения не найден');
+            return;
+        }
+        
+        // Обрабатываем приглашение
+        async function handleInvitation() {
+            try {
+                const response = await fetch(`/api/invitations/handle?token=${token}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Ошибка обработки приглашения');
+                }
+                
+                const data = await response.json();
+                
+                // Скрываем загрузку
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                // Показываем информацию о приглашении
+                showInvitationInfo(data.invitation);
+                
+                // Показываем сообщение
+                showSuccess(data.message);
+                
+                // Автоматически перенаправляем через 2 секунды
+                setTimeout(() => {
+                    window.location.href = data.redirectTo;
+                }, 2000);
+                
+                // Показываем кнопку для ручного перехода
+                const redirectBtn = document.getElementById('redirect-btn');
+                redirectBtn.href = data.redirectTo;
+                redirectBtn.textContent = data.isAuthenticated ? 'Перейти в приглашения' : 'Перейти к регистрации';
+                document.getElementById('actions').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Ошибка обработки приглашения:', error);
+                showError(error.message);
+            }
+        }
+        
+        function showInvitationInfo(invitation) {
+            document.getElementById('invitation-email').textContent = invitation.email;
+            document.getElementById('invitation-type').textContent = 
+                invitation.type === 'organization' ? 'Организация' : 'Команда';
+            document.getElementById('invitation-target').textContent = 
+                invitation.organization || invitation.team || 'Не указано';
+            document.getElementById('invitation-inviter').textContent = 
+                invitation.invitedBy || 'Не указано';
+            document.getElementById('invitation-expires').textContent = 
+                new Date(invitation.expiresAt).toLocaleDateString('ru-RU');
+            
+            document.getElementById('invitation-info').style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('success-message').textContent = message;
+            document.getElementById('success').style.display = 'block';
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('actions').style.display = 'block';
+        }
+        
+        // Запускаем обработку при загрузке страницы
+        document.addEventListener('DOMContentLoaded', handleInvitation);
+    </script>
+</body>
+</html>

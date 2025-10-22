@@ -245,11 +245,19 @@ export class InvitationsService {
     if (invitation.roleId) {
       // Проверяем, не назначена ли уже эта роль
       const existingAssignment = await this.userRoleAssignmentRepo.findOne({
+        where: { 
+          userId: user.id, 
+          roleId: invitation.roleId,
+          organizationId: invitation.organizationId,
+          teamId: invitation.teamId
+        },
         where: { userId: user.id, roleId: invitation.roleId },
       });
 
       if (!existingAssignment) {
         const userRoleAssignment = this.userRoleAssignmentRepo.create({
+          organizationId: invitation.organizationId,
+          teamId: invitation.teamId,
           userId: user.id,
           roleId: invitation.roleId,
         });
@@ -268,6 +276,8 @@ export class InvitationsService {
 
         if (!existingViewerAssignment) {
           const userRoleAssignment = this.userRoleAssignmentRepo.create({
+          organizationId: invitation.organizationId,
+          teamId: invitation.teamId,
             userId: user.id,
             roleId: viewerRole.id,
           });

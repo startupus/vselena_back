@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="version" content="2.0.3">
     <title>Vselena - Система управления знаниями</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -980,6 +984,17 @@
 
     <script src="js/api-config.js"></script>
     <script>
+        // Version для принудительного обновления кеша
+        const VERSION = '2.0.6';
+        console.log('🚀 Vselena Frontend v' + VERSION + ' загружен');
+        
+        // Принудительное обновление кеша
+        if (localStorage.getItem('frontendVersion') !== VERSION) {
+            localStorage.setItem('frontendVersion', VERSION);
+            console.log('🔄 Обновление кеша до версии ' + VERSION);
+        }
+        
+        
         // Global variables
         let currentUser = null;
         let authToken = null;
@@ -993,6 +1008,15 @@
                 // Show 2FA form directly
                 show2FAForm();
                 return;
+            }
+
+            // Check if this is email verification
+            if (urlParams.get('verify-email') === 'true') {
+                const token = urlParams.get('token');
+                if (token) {
+                    verifyEmailToken(token);
+                    return;
+                }
             }
 
             // Check if this is a password reset page
@@ -1215,6 +1239,8 @@
 
         // Send 2FA code to email
         async function send2FACode(email) {
+            console.log('🚨 ФРОНТЕНД v' + VERSION + ': ВЫЗВАНА ФУНКЦИЯ send2FACode (2FA)');
+            console.log('📧 Email:', email);
             try {
                 await apiCall('/api/auth/2fa/email/send-code', {
                     method: 'POST',
@@ -1227,7 +1253,7 @@
             }
         }
 
-        // Send email code
+        // Send email code for login (2FA)
         async function sendEmailCode() {
             const email = document.getElementById('emailCodeEmail').value;
             
@@ -1236,11 +1262,14 @@
                 return;
             }
 
+            console.log('🚨 ФРОНТЕНД v' + VERSION + ': ВЫЗВАНА ФУНКЦИЯ sendEmailCode (2FA LOGIN)');
+            console.log('📧 Email:', email);
+
             // Show loading
             showLoading('sendCodeBtn', 'sendCodeBtnText', 'sendCodeLoading');
 
             try {
-                await apiCall('/api/auth/email-code/send', {
+                await apiCall('/api/auth/2fa/email/send-code', {
                     method: 'POST',
                     body: JSON.stringify({ email })
                 });
@@ -1261,24 +1290,34 @@
             }
         }
 
-        // Handle email code
+        // Handle email code login (2FA)
         async function handleEmailCode(event) {
             event.preventDefault();
             
+            const email = document.getElementById('emailCodeEmail').value;
             const code = Array.from(document.querySelectorAll('#emailCodeForm .otp-input')).map(input => input.value).join('');
+
+            if (!email) {
+                showMessage('Введите email', 'error');
+                return;
+            }
 
             if (code.length !== 6) {
                 showMessage('Введите полный код из 6 цифр', 'error');
                 return;
             }
 
+            console.log('🚨 ФРОНТЕНД v' + VERSION + ': ВЫЗВАНА ФУНКЦИЯ handleEmailCode (2FA LOGIN)');
+            console.log('📧 Email:', email);
+            console.log('🔢 Code:', code);
+
             // Show loading
             showLoading('emailCodeBtn', 'emailCodeBtnText', 'emailCodeLoading');
 
             try {
-                const response = await apiCall('/api/auth/email-code/login', {
+                const response = await apiCall('/api/auth/2fa/email/verify', {
                     method: 'POST',
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify({ email, code })
                 });
 
                 // Email code login successful
@@ -1303,7 +1342,7 @@
             }
         }
 
-        // Resend email code
+        // Resend email code for login (2FA)
         async function resendEmailCode() {
             const email = document.getElementById('emailCodeEmail').value;
             
@@ -1311,6 +1350,9 @@
                 showMessage('Введите email', 'error');
                 return;
             }
+
+            console.log('🚨 ФРОНТЕНД v' + VERSION + ': ВЫЗВАНА ФУНКЦИЯ resendEmailCode (2FA LOGIN)');
+            console.log('📧 Email:', email);
 
             // Show loading
             const resendBtn = document.getElementById('resendBtn');
@@ -1321,7 +1363,7 @@
             resendBtnText.textContent = 'Отправка...';
 
             try {
-                await apiCall('/api/auth/email-code/send', {
+                await apiCall('/api/auth/2fa/email/send-code', {
                     method: 'POST',
                     body: JSON.stringify({ email })
                 });
@@ -1643,6 +1685,42 @@
                 console.error('Token verification failed:', error);
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('refreshToken');
+            }
+        }
+
+        // Verify email token
+        async function verifyEmailToken(token) {
+            try {
+                console.log('🔍 Проверяем токен подтверждения email:', token);
+                
+                const response = await apiCall('/api/auth/email-verification/verify', {
+                    method: 'POST',
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.success) {
+                    showMessage('Email успешно подтвержден! Вы будете перенаправлены на страницу входа.', 'success');
+                    
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    showMessage('Ошибка подтверждения email: ' + response.message, 'error');
+                    
+                    // Redirect to login after 5 seconds
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 5000);
+                }
+            } catch (error) {
+                console.error('Ошибка подтверждения email:', error);
+                showMessage('Ошибка подтверждения email: ' + error.message, 'error');
+                
+                // Redirect to login after 5 seconds
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 5000);
             }
         }
 

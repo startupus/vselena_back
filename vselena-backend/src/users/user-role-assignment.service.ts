@@ -4,8 +4,6 @@ import { Repository } from 'typeorm';
 import { UserRoleAssignment } from './entities/user-role-assignment.entity';
 import { User } from './entities/user.entity';
 import { Role } from '../rbac/entities/role.entity';
-import { Organization } from '../organizations/entities/organization.entity';
-import { Team } from '../teams/entities/team.entity';
 
 @Injectable()
 export class UserRoleAssignmentService {
@@ -16,68 +14,45 @@ export class UserRoleAssignmentService {
     private usersRepo: Repository<User>,
     @InjectRepository(Role)
     private rolesRepo: Repository<Role>,
-    @InjectRepository(Organization)
-    private organizationsRepo: Repository<Organization>,
-    @InjectRepository(Team)
-    private teamsRepo: Repository<Team>,
   ) {}
 
-  /**
-   * Назначить роль пользователю в контексте команды/организации
-   */
   async assignRole(
     userId: string,
     roleId: string,
-    organizationId: string | null,
-    teamId: string | null,
-    assignedBy: string,
+    organizationId?: string,
+    teamId?: string,
+    assignedBy?: string,
     expiresAt?: Date,
   ): Promise<UserRoleAssignment> {
-    // Проверяем, что пользователь существует
-    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃСѓС‰РµСЃС‚РІСѓРµС‚
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      relations: ['organizations', 'teams'],
+    });
+
     if (!user) {
-      throw new NotFoundException('Пользователь не найден');
+      throw new NotFoundException('User not found');
     }
 
-    // Проверяем, что роль существует
-    const role = await this.rolesRepo.findOne({ where: { id: roleId } });
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЂРѕР»СЊ СЃСѓС‰РµСЃС‚РІСѓРµС‚
+    const role = await this.rolesRepo.findOne({
+      where: { id: roleId },
+    });
+
     if (!role) {
-      throw new NotFoundException('Роль не найдена');
+      throw new NotFoundException('Role not found');
     }
 
-    // Проверяем, что организация существует (если указана)
-    if (organizationId) {
-      const organization = await this.organizationsRepo.findOne({ where: { id: organizationId } });
-      if (!organization) {
-        throw new NotFoundException('Организация не найдена');
-      }
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЏРІР»СЏРµС‚СЃСЏ С‡Р»РµРЅРѕРј РѕСЂРіР°РЅРёР·Р°С†РёРё/РєРѕРјР°РЅРґС‹
+    if (organizationId && !user.organizations?.some(org => org.id === organizationId)) {
+      throw new ForbiddenException('User is not a member of the organization');
     }
 
-    // Проверяем, что команда существует (если указана)
-    if (teamId) {
-      const team = await this.teamsRepo.findOne({ where: { id: teamId } });
-      if (!team) {
-        throw new NotFoundException('Команда не найдена');
-      }
+    if (teamId && !user.teams?.some(team => team.id === teamId)) {
+      throw new ForbiddenException('User is not a member of the team');
     }
 
-    // Проверяем, что пользователь состоит в указанной организации/команде
-    const userOrganizations = await this.usersRepo
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.organizations', 'organizations')
-      .leftJoinAndSelect('user.teams', 'teams')
-      .where('user.id = :userId', { userId })
-      .getOne();
-
-    if (organizationId && !userOrganizations.organizations?.some(org => org.id === organizationId)) {
-      throw new ForbiddenException('Пользователь не состоит в указанной организации');
-    }
-
-    if (teamId && !userOrganizations.teams?.some(team => team.id === teamId)) {
-      throw new ForbiddenException('Пользователь не состоит в указанной команде');
-    }
-
-    // Удаляем существующее назначение роли в том же контексте
+    // РЈРґР°Р»СЏРµРј СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРµ РЅР°Р·РЅР°С‡РµРЅРёРµ СЂРѕР»Рё
     await this.userRoleAssignmentRepo.delete({
       userId,
       roleId,
@@ -85,7 +60,7 @@ export class UserRoleAssignmentService {
       teamId,
     });
 
-    // Создаем новое назначение роли
+    // РЎРѕР·РґР°РµРј РЅРѕРІРѕРµ РЅР°Р·РЅР°С‡РµРЅРёРµ СЂРѕР»Рё
     const assignment = this.userRoleAssignmentRepo.create({
       userId,
       roleId,
@@ -98,14 +73,11 @@ export class UserRoleAssignmentService {
     return this.userRoleAssignmentRepo.save(assignment);
   }
 
-  /**
-   * Удалить роль у пользователя в контексте команды/организации
-   */
   async removeRole(
     userId: string,
     roleId: string,
-    organizationId: string | null,
-    teamId: string | null,
+    organizationId?: string,
+    teamId?: string,
   ): Promise<void> {
     const result = await this.userRoleAssignmentRepo.delete({
       userId,
@@ -115,13 +87,10 @@ export class UserRoleAssignmentService {
     });
 
     if (result.affected === 0) {
-      throw new NotFoundException('Назначение роли не найдено');
+      throw new NotFoundException('Role assignment not found');
     }
   }
 
-  /**
-   * Получить все роли пользователя в контексте команды/организации
-   */
   async getUserRoles(
     userId: string,
     organizationId?: string,
@@ -130,8 +99,7 @@ export class UserRoleAssignmentService {
     const query = this.userRoleAssignmentRepo
       .createQueryBuilder('assignment')
       .leftJoinAndSelect('assignment.role', 'role')
-      .leftJoinAndSelect('assignment.organization', 'organization')
-      .leftJoinAndSelect('assignment.team', 'team')
+      .leftJoinAndSelect('assignment.user', 'user')
       .where('assignment.userId = :userId', { userId });
 
     if (organizationId) {
@@ -145,9 +113,6 @@ export class UserRoleAssignmentService {
     return query.getMany();
   }
 
-  /**
-   * Проверить, есть ли у пользователя определенная роль в контексте
-   */
   async userHasRole(
     userId: string,
     roleName: string,
@@ -172,23 +137,19 @@ export class UserRoleAssignmentService {
     return !!assignment;
   }
 
-  /**
-   * Получить все права пользователя в контексте команды/организации
-   */
   async getUserPermissions(
     userId: string,
     organizationId?: string,
     teamId?: string,
   ): Promise<string[]> {
     const assignments = await this.getUserRoles(userId, organizationId, teamId);
-    
     const permissions = new Set<string>();
-    
+
     for (const assignment of assignments) {
-      if (assignment.role?.permissions) {
-        assignment.role.permissions.forEach(permission => {
+      if (assignment.role && assignment.role.permissions) {
+        for (const permission of assignment.role.permissions) {
           permissions.add(permission.name);
-        });
+        }
       }
     }
 
