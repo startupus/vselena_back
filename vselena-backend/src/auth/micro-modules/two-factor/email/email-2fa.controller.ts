@@ -6,11 +6,16 @@ import { Request } from 'express';
 
 @Controller('auth/2fa/email')
 export class EmailTwoFactorController {
-  constructor(private readonly emailTwoFactorService: EmailTwoFactorService) {}
+  constructor(
+    private readonly emailTwoFactorService: EmailTwoFactorService,
+  ) {}
 
   @Post('send-code')
   @Public()
   async sendEmailCode(@Body('email') email: string) {
+    console.log('🚨 ВЫЗВАН СТАРЫЙ 2FA ENDPOINT: /api/auth/2fa/email/send-code');
+    console.log('📧 Email:', email);
+    
     if (!email) {
       throw new Error('Email обязателен');
     }

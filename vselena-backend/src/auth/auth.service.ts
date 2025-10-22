@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, MoreThan } from 'typeorm';
@@ -8,6 +9,7 @@ import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { TwoFactorCode, TwoFactorStatus, TwoFactorType } from './entities/two-factor-code.entity';
 import { Role } from '../rbac/entities/role.entity';
+import { UserRoleAssignment } from '../users/entities/user-role-assignment.entity';
 import { UsersService } from '../users/users.service';
 import { RbacService } from '../rbac/rbac.service';
 import { LoginDto } from './dto/login.dto';
@@ -28,6 +30,7 @@ export class AuthService {
     private jwtService: JwtService,
     private rbacService: RbacService,
     private referralsService: ReferralsService,
+    private configService: ConfigService,
     @InjectRepository(RefreshToken)
     private refreshTokensRepo: Repository<RefreshToken>,
     @InjectRepository(TwoFactorCode)
@@ -38,6 +41,8 @@ export class AuthService {
     private usersRepo: Repository<User>,
     @InjectRepository(EmailVerificationToken)
     private emailVerificationTokensRepo: Repository<EmailVerificationToken>,
+    @InjectRepository(UserRoleAssignment)
+    private userRoleAssignmentRepo: Repository<UserRoleAssignment>,
     private emailService: EmailService,
   ) {}
 
@@ -66,46 +71,19 @@ export class AuthService {
       passwordHash,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      organizationId: dto.organizationId,
-      teamId: dto.teamId,
     });
 
-    // 5. Назначение роли - все пользователи становятся viewer
-    // Роли могут быть повышены только супер-админом или по специальным условиям
-    try {
-      const viewerRole = await this.rolesRepo.findOne({ where: { name: 'viewer' } });
-      if (viewerRole) {
-        // Прямое назначение роли через TypeORM (обходим проверку организации)
-        await this.usersRepo
-          .createQueryBuilder()
-          .relation(User, 'roles')
-          .of(user.id)
-          .add(viewerRole.id);
-        console.log('👤 Пользователь зарегистрирован как viewer');
-      } else {
-        console.log('⚠️ Роль viewer не найдена, пользователь создан без роли');
-      }
-    } catch (error) {
-      console.log('⚠️ Ошибка назначения роли viewer:', error.message);
-    }
+    // 5. Пользователь создается без ролей - роли назначаются администратором
+    console.log('👤 Пользователь зарегистрирован без ролей');
 
-    // Загружаем пользователя с ролями для генерации токенов
-    const userWithRoles = await this.usersService.findByEmail(user.email, {
-      relations: ['roles', 'roles.permissions', 'organization', 'team'],
-    });
-
-    if (!userWithRoles) {
-      throw new Error('Пользователь не найден после регистрации');
-    }
-
-    // Генерируем токены для автоматического входа
-    const accessToken = await this.generateAccessToken(userWithRoles as User);
-    const refreshToken = await this.generateRefreshToken(userWithRoles as User);
+    // Генерируем токены для автоматического входа (без ролей)
+    const accessToken = await this.generateAccessToken(user);
+    const refreshToken = await this.generateRefreshToken(user);
 
     return {
       accessToken,
       refreshToken,
-      user: this.sanitizeUser(userWithRoles as User),
+      user: this.sanitizeUser(user),
     };
   }
 
@@ -194,16 +172,16 @@ export class AuthService {
    */
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email, {
-      select: ['id', 'email', 'passwordHash', 'isActive', 'emailVerified', 'organizationId', 'teamId', 'twoFactorEnabled'],
-      relations: ['roles', 'roles.permissions', 'organization', 'team'],
+      select: ['id', 'email', 'passwordHash', 'isActive', 'emailVerified', 'twoFactorEnabled'],
+      relations: ['organizations', 'teams'],
     });
 
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден');
     }
 
-    console.log('🔍 User roles:', user.roles?.length || 0);
-    console.log('🔍 User permissions:', user.roles?.flatMap(r => r.permissions)?.length || 0);
+    console.log('🔍 User organizations:', user.organizations?.length || 0);
+    console.log('🔍 User teams:', user.teams?.length || 0);
 
     if (!user.isActive) {
       throw new UnauthorizedException('Аккаунт деактивирован');
@@ -214,7 +192,13 @@ export class AuthService {
       throw new UnauthorizedException('Пользователь не имеет пароля');
     }
     
+    console.log('🔐 Password comparison:');
+    console.log('  Input password:', password);
+    console.log('  Stored hash:', user.passwordHash);
+    
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    console.log('  Is valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       throw new UnauthorizedException('Неверный пароль');
     }
@@ -226,15 +210,14 @@ export class AuthService {
    * Генерация Access Token (JWT)
    */
   async generateAccessToken(user: User): Promise<string> {
-    const permissions = this.extractPermissions(user.roles || []);
-
+    // Пользователи без ролей - роли назначаются администратором
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      organizationId: user.organizationId || null,
-      teamId: user.teamId || null,
-      roles: (user.roles || []).map(r => r.name),
-      permissions,
+      organizationId: user.organizations?.[0]?.id || null, // Первая организация
+      teamId: user.teams?.[0]?.id || null, // Первая команда
+      roles: [], // Пустой массив ролей
+      permissions: [], // Пустой массив прав
     };
 
     return this.jwtService.sign(payload, {
@@ -266,7 +249,7 @@ export class AuthService {
   async refreshAccessToken(refreshToken: string): Promise<string> {
     const tokenRecord = await this.refreshTokensRepo.findOne({
       where: { token: refreshToken },
-      relations: ['user', 'user.roles', 'user.roles.permissions'],
+      relations: ['user'],
     });
 
     if (!tokenRecord) {
@@ -298,6 +281,42 @@ export class AuthService {
       { token: refreshToken },
       { isRevoked: true }
     );
+  }
+
+  /**
+   * Получить актуальные данные текущего пользователя
+   */
+  async getCurrentUser(userId: string): Promise<any> {
+    const user = await this.usersService.findById(userId, {
+      relations: ['organizations', 'teams'] as any,
+    } as any);
+
+    if (!user) {
+      throw new UnauthorizedException('Пользователь не найден');
+    }
+
+    // Возвращаем данные пользователя без ролей (роли назначаются администратором)
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
+      phone: user.phone,
+      organizationId: user.organizations?.[0]?.id || null,
+      teamId: user.teams?.[0]?.id || null,
+      isActive: user.isActive,
+      emailVerified: user.emailVerified,
+      twoFactorEnabled: user.twoFactorEnabled,
+      twoFactorMethods: user.twoFactorMethods,
+      phoneVerified: user.phoneVerified,
+      roles: [], // Пустой массив ролей
+      permissions: [], // Пустой массив прав
+      organizations: user.organizations,
+      teams: user.teams,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   /**
@@ -333,7 +352,7 @@ export class AuthService {
       // 1. Пытаемся найти пользователя по email
       const existingUser = await this.usersService.findByEmail(dto.email, {
         select: ['id', 'email', 'passwordHash', 'isActive', 'emailVerified', 'firstName', 'lastName'],
-        relations: ['roles', 'roles.permissions', 'organization', 'team'],
+        relations: ['organizations', 'teams'],
       });
 
       if (existingUser) {
@@ -423,28 +442,16 @@ export class AuthService {
           }
         }
 
-        // Назначаем роль viewer
-        try {
-          const viewerRole = await this.rolesRepo.findOne({ where: { name: 'viewer' } });
-          if (viewerRole) {
-            await this.usersRepo
-              .createQueryBuilder()
-              .relation(User, 'roles')
-              .of(savedUser.id)
-              .add(viewerRole.id);
-            console.log('👤 Пользователь зарегистрирован как viewer');
-          }
-        } catch (error) {
-          console.log('⚠️ Ошибка назначения роли viewer:', error.message);
-        }
+        // Пользователь создается без ролей - роли назначаются администратором
+        console.log('👤 Пользователь зарегистрирован без ролей');
 
-        // Перезагружаем пользователя с ролями
+        // Перезагружаем пользователя без ролей
         const userWithRoles = await this.usersService.findByEmail(dto.email, {
-          relations: ['roles', 'roles.permissions', 'organization', 'team'],
+          relations: ['organizations', 'teams'],
         });
 
         if (!userWithRoles) {
-          throw new Error('Не удалось загрузить пользователя с ролями');
+          throw new Error('Не удалось загрузить пользователя');
         }
 
         // Проверяем, нужны ли дополнительные данные
@@ -673,9 +680,11 @@ export class AuthService {
         };
       }
 
+      console.log('🔍 Проверка emailVerified:', user.emailVerified);
       if (user.emailVerified) {
+        console.log('✅ Email уже подтвержден, возвращаем успех с информационным сообщением');
         return {
-          success: false,
+          success: true,
           message: 'Email уже подтвержден',
         };
       }
@@ -697,7 +706,8 @@ export class AuthService {
       await this.emailVerificationTokensRepo.save(verificationToken);
 
       // Формируем ссылку для подтверждения
-      const verificationLink = `http://localhost:3002/?verify-email=true&token=${token}`;
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      const verificationLink = `${frontendUrl}/?verify-email=true&token=${token}`;
 
       // Отправляем реальное письмо
       try {
@@ -719,6 +729,124 @@ export class AuthService {
       return {
         success: false,
         message: 'Ошибка отправки письма подтверждения',
+      };
+    }
+  }
+
+  /**
+   * Вход по коду с почты (2FA)
+   */
+  async verifyEmail2FACode(email: string, code: string): Promise<any> {
+    try {
+      console.log('🔍 Проверяем 2FA код для email:', email);
+      console.log('🔢 Код:', code);
+
+      // Находим пользователя
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        console.log('❌ Пользователь не найден');
+        throw new UnauthorizedException('Пользователь не найден');
+      }
+
+      // Находим код в БД
+      const twoFactorCode = await this.twoFactorCodesRepo.findOne({
+        where: {
+          contact: email,
+          code: code,
+          type: 'email' as any,
+          status: 'pending' as any
+        }
+      });
+
+      if (!twoFactorCode) {
+        console.log('❌ Код не найден или неверный');
+        throw new UnauthorizedException('Неверный код');
+      }
+
+      // Проверяем, не истёк ли код (5 минут)
+      const now = new Date();
+      const codeAge = now.getTime() - twoFactorCode.createdAt.getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+
+      if (codeAge > fiveMinutes) {
+        console.log('❌ Код истёк');
+        throw new UnauthorizedException('Код истёк. Запросите новый код');
+      }
+
+      // Помечаем код как использованный
+      await this.twoFactorCodesRepo.update(twoFactorCode.id, {
+        status: 'used' as any
+      });
+
+      console.log('✅ Код подтверждён, генерируем токены');
+
+      // Генерируем токены
+      const accessToken = await this.generateAccessToken(user);
+      const refreshToken = await this.generateRefreshToken(user);
+
+      return {
+        accessToken,
+        refreshToken,
+        user: this.sanitizeUser(user)
+      };
+
+    } catch (error) {
+      console.error('Ошибка верификации 2FA кода:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Подтверждение email по токену
+   */
+  async verifyEmailToken(token: string): Promise<EmailVerificationResponseDto> {
+    try {
+      console.log('🔍 Ищем токен подтверждения:', token);
+      
+      // Находим токен в БД
+      const verificationToken = await this.emailVerificationTokensRepo.findOne({
+        where: { token, isUsed: false },
+        relations: ['user'],
+      });
+
+      if (!verificationToken) {
+        console.log('❌ Токен не найден или уже использован');
+        return {
+          success: false,
+          message: 'Неверный или истёкший токен подтверждения',
+        };
+      }
+
+      // Проверяем, не истёк ли токен
+      if (verificationToken.expiresAt < new Date()) {
+        console.log('❌ Токен истёк');
+        return {
+          success: false,
+          message: 'Токен подтверждения истёк',
+        };
+      }
+
+      // Обновляем статус пользователя
+      await this.usersService.update(verificationToken.user.id, {
+        emailVerified: true,
+      });
+
+      // Помечаем токен как использованный
+      verificationToken.isUsed = true;
+      verificationToken.status = 'verified' as any;
+      await this.emailVerificationTokensRepo.save(verificationToken);
+
+      console.log('✅ Email успешно подтвержден для пользователя:', verificationToken.user.email);
+
+      return {
+        success: true,
+        message: 'Email успешно подтвержден',
+      };
+    } catch (error) {
+      console.error('Ошибка подтверждения email:', error);
+      return {
+        success: false,
+        message: 'Ошибка подтверждения email',
       };
     }
   }

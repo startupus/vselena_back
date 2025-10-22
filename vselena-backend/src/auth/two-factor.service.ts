@@ -254,8 +254,8 @@ export class TwoFactorService {
     const payload = {
       sub: user.id,
       email: user.email,
-      organizationId: user.organizationId,
-      teamId: user.teamId || undefined,
+      organizationId: user.organizations?.[0]?.id || null,
+      teamId: user.teams?.[0]?.id || null,
       roles: roles,
       permissions: permissions,
     };

@@ -37,7 +37,7 @@ services:
       JWT_REFRESH_SECRET: your-refresh-secret-key-min-32-chars-long-very-secure
       JWT_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d
-      FRONTEND_URL: http://localhost:3002
+      FRONTEND_URL: https://vselena.ldmco.ru
       SWAGGER_ENABLED: true
       # Email настройки (Yandex SMTP - работает в России)
       SMTP_HOST: smtp.yandex.ru

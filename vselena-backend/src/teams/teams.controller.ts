@@ -9,41 +9,37 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('teams')
 @Controller('teams')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Post()
-  @RequirePermissions('teams.create')
   @ApiOperation({ summary: 'Создание новой команды' })
   @ApiResponse({ status: 201, description: 'Команда создана' })
   async create(
     @Body() createTeamDto: Partial<Team>,
     @CurrentUser() user: any,
   ) {
-    // Устанавливаем organizationId только если он не передан в DTO
+    // organizationId должен быть передан в DTO
     if (!createTeamDto.organizationId) {
-      createTeamDto.organizationId = user.organizationId;
+      throw new Error('organizationId is required');
     }
     return this.teamsService.create(createTeamDto, user.userId);
   }
 
   @Get()
-  @RequirePermissions('teams.read')
   @ApiOperation({ summary: 'Получение списка команд' })
   @ApiResponse({ status: 200, description: 'Список команд' })
   async findAll(
     @Query('organizationId') organizationId?: string,
     @CurrentUser() user?: any,
   ) {
-    const orgId = organizationId || user?.organizationId;
-    // Все пользователи видят только свои команды
-    return this.teamsService.findAll(orgId, user?.userId);
+    // organizationId не обязателен; по умолчанию показываем команды пользователя и его организаций
+    return this.teamsService.findAll(organizationId, user?.userId);
   }
 
   @Get(':id')
-  @RequirePermissions('teams.read')
   @ApiOperation({ summary: 'Получение команды по ID' })
   @ApiResponse({ status: 200, description: 'Данные команды' })
   @ApiResponse({ status: 404, description: 'Команда не найдена' })
@@ -52,7 +48,6 @@ export class TeamsController {
   }
 
   @Patch(':id')
-  @RequirePermissions('teams.update')
   @ApiOperation({ summary: 'Обновление команды' })
   @ApiResponse({ status: 200, description: 'Команда обновлена' })
   @ApiResponse({ status: 404, description: 'Команда не найдена' })
@@ -61,7 +56,6 @@ export class TeamsController {
   }
 
   @Get(':id/members')
-  @RequirePermissions('teams.read')
   @ApiOperation({ summary: 'Получение участников команды' })
   @ApiResponse({ status: 200, description: 'Список участников команды' })
   @ApiResponse({ status: 404, description: 'Команда не найдена' })
@@ -70,7 +64,6 @@ export class TeamsController {
   }
 
   @Delete(':id')
-  @RequirePermissions('teams.delete')
   @ApiOperation({ summary: 'Удаление команды' })
   @ApiResponse({ status: 200, description: 'Команда удалена' })
   @ApiResponse({ status: 404, description: 'Команда не найдена' })

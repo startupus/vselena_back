@@ -18,6 +18,7 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { EmailVerificationToken } from './entities/email-verification-token.entity';
 import { Role } from '../rbac/entities/role.entity';
 import { User } from '../users/entities/user.entity';
+import { UserRoleAssignment } from '../users/entities/user-role-assignment.entity';
 import { UsersModule } from '../users/users.module';
 import { RbacModule } from '../rbac/rbac.module';
 
@@ -29,7 +30,7 @@ import { EmailCodeModule } from './micro-modules/email-code/email-code.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([RefreshToken, TwoFactorCode, PasswordResetToken, EmailVerificationToken, Role, User]),
+    TypeOrmModule.forFeature([RefreshToken, TwoFactorCode, PasswordResetToken, EmailVerificationToken, Role, User, UserRoleAssignment]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

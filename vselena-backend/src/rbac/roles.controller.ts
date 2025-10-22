@@ -9,21 +9,30 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('roles')
 @Controller('roles')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RolesController {
   constructor(private readonly rbacService: RbacService) {}
 
   @Get()
-  @RequirePermissions('roles.create')
+  @ApiOperation({ summary: 'Получение всех доступных ролей' })
+  @ApiResponse({ status: 200, description: 'Список ролей' })
+  async getAllRoles() {
+    return this.rbacService.getAllRoles();
+  }
+
+  @Get('organization')
   @ApiOperation({ summary: 'Получение ролей организации' })
   @ApiResponse({ status: 200, description: 'Список ролей' })
   async getOrganizationRoles(@CurrentUser() user: any) {
-    return this.rbacService.getOrganizationRoles(user.organizationId);
+    const organizationId = user.organizations?.[0]?.id;
+    if (!organizationId) {
+      throw new Error('User has no organization');
+    }
+    return this.rbacService.getOrganizationRoles(organizationId);
   }
 
   @Post()
-  @RequirePermissions('roles.create')
   @ApiOperation({ summary: 'Создание новой роли' })
   @ApiResponse({ status: 201, description: 'Роль создана' })
   async createRole(
@@ -34,17 +43,18 @@ export class RolesController {
     },
     @CurrentUser() user: any,
   ) {
+    const organizationId = user.organizations?.[0]?.id;
+    const teamId = user.teams?.[0]?.id;
     return this.rbacService.createRole(
       createRoleDto.name,
       createRoleDto.description,
-      user.organizationId,
-      user.teamId,
+      organizationId,
+      teamId,
       createRoleDto.permissionIds,
     );
   }
 
   @Patch(':id/permissions')
-  @RequirePermissions('roles.update')
   @ApiOperation({ summary: 'Обновление прав роли' })
   @ApiResponse({ status: 200, description: 'Права роли обновлены' })
   async updateRolePermissions(
@@ -56,7 +66,6 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @RequirePermissions('roles.delete')
   @ApiOperation({ summary: 'Удаление роли' })
   @ApiResponse({ status: 200, description: 'Роль удалена' })
   async deleteRole(@Param('id') id: string) {

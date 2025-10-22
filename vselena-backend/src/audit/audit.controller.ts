@@ -15,13 +15,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('audit')
 @Controller('audit')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get('my-history')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение истории действий текущего пользователя' })
   @ApiResponse({ status: 200, description: 'История действий пользователя' })
   @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
@@ -45,7 +44,6 @@ export class AuditController {
   }
 
   @Get('my-service-tree')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение дерева сервисов текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Дерево сервисов с ролями и правами' })
   async getMyServiceTree(@CurrentUser() user: any) {
@@ -53,7 +51,6 @@ export class AuditController {
   }
 
   @Get('my-statistics')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение статистики по сервисам текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Статистика использования сервисов' })
   async getMyStatistics(@CurrentUser() user: any) {
@@ -61,7 +58,6 @@ export class AuditController {
   }
 
   @Get('my-role-history')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение истории ролей текущего пользователя' })
   @ApiResponse({ status: 200, description: 'История изменения ролей и прав' })
   async getMyRoleHistory(@CurrentUser() user: any) {
@@ -69,7 +65,6 @@ export class AuditController {
   }
 
   @Get('user/:userId/history')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение истории действий пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'История действий пользователя' })
   @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
@@ -93,7 +88,6 @@ export class AuditController {
   }
 
   @Get('user/:userId/service-tree')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение дерева сервисов пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'Дерево сервисов с ролями и правами' })
   async getUserServiceTree(
@@ -103,7 +97,6 @@ export class AuditController {
   }
 
   @Get('user/:userId/statistics')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение статистики по сервисам пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'Статистика использования сервисов' })
   async getUserStatistics(
@@ -113,7 +106,6 @@ export class AuditController {
   }
 
   @Get('user/:userId/role-history')
-  @RequirePermissions('users.read')
   @ApiOperation({ summary: 'Получение истории ролей пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'История изменения ролей и прав' })
   async getUserRoleHistory(

@@ -70,10 +70,11 @@ import appConfig from './config/app.config';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: PermissionsGuard,
-    },
+    // PermissionsGuard отключен - роли только для отображения в командах/организациях
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: PermissionsGuard,
+    // },
     {
       provide: 'APP_INTERCEPTOR',
       useClass: AuditInterceptor,

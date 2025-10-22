@@ -62,8 +62,8 @@ export class AuditInterceptor implements NestInterceptor {
         userAgent: request.get('User-Agent'),
         userRoles: user.roles || [],
         userPermissions: user.permissions || [],
-        organizationId: user.organizationId,
-        teamId: user.teamId,
+        organizationId: user.organizations?.[0]?.id || null,
+        teamId: user.teams?.[0]?.id || null,
       });
     } catch (error) {
       console.error('Audit logging error:', error);
@@ -95,8 +95,8 @@ export class AuditInterceptor implements NestInterceptor {
         userAgent: request.get('User-Agent'),
         userRoles: user.roles || [],
         userPermissions: user.permissions || [],
-        organizationId: user.organizationId,
-        teamId: user.teamId,
+        organizationId: user.organizations?.[0]?.id || null,
+        teamId: user.teams?.[0]?.id || null,
       });
     } catch (auditError) {
       console.error('Audit logging error:', auditError);

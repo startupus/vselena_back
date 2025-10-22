@@ -13,6 +13,7 @@ import {
 import { Organization } from '../../organizations/entities/organization.entity';
 import { Team } from '../../teams/entities/team.entity';
 import { Role } from '../../rbac/entities/role.entity';
+import { UserRoleAssignment } from './user-role-assignment.entity';
 
 @Entity('users')
 export class User {
@@ -37,11 +38,7 @@ export class User {
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null;
 
-  @Column({ type: 'uuid', nullable: true })
-  organizationId: string | null;
-
-  @Column({ type: 'uuid', nullable: true })
-  teamId: string | null;
+  // Удалены одиночные связи - теперь только ManyToMany
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
@@ -74,25 +71,11 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => Organization, (organization) => organization.users, {
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'organizationId' })
-  organization: Organization;
+  // Удалены одиночные связи - теперь только ManyToMany
 
-  @ManyToOne(() => Team, (team) => team.users, {
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'teamId' })
-  team: Team;
-
-  @ManyToMany(() => Role, (role) => role.users)
-  @JoinTable({
-    name: 'user_roles',
-    joinColumn: { name: 'userId', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'roleId', referencedColumnName: 'id' },
-  })
-  roles: Role[];
+  // Роли теперь через UserRoleAssignment entity
+  @OneToMany(() => UserRoleAssignment, (assignment) => assignment.user)
+  userRoleAssignments: UserRoleAssignment[];
 
   @ManyToMany(() => Organization, (organization) => organization.members)
   @JoinTable({

@@ -7,13 +7,12 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('permissions')
 @Controller('permissions')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PermissionsController {
   constructor(private readonly rbacService: RbacService) {}
 
   @Get()
-  @RequirePermissions('roles.create')
   @ApiOperation({ summary: 'Получение всех доступных прав' })
   @ApiResponse({ status: 200, description: 'Список прав' })
   async getAllPermissions() {

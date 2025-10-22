@@ -9,13 +9,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('organizations')
 @Controller('organizations')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post()
-  @RequirePermissions('organizations.create')
   @ApiOperation({ summary: 'Создание новой организации' })
   @ApiResponse({ status: 201, description: 'Организация создана' })
   async create(@Body() createOrganizationDto: Partial<Organization>, @CurrentUser() user: any) {
@@ -23,7 +22,6 @@ export class OrganizationsController {
   }
 
   @Get()
-  @RequirePermissions('organizations.read')
   @ApiOperation({ summary: 'Получение списка организаций' })
   @ApiResponse({ status: 200, description: 'Список организаций' })
   async findAll(@CurrentUser() user: any) {
@@ -32,7 +30,6 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @RequirePermissions('organizations.read')
   @ApiOperation({ summary: 'Получение организации по ID' })
   @ApiResponse({ status: 200, description: 'Данные организации' })
   @ApiResponse({ status: 404, description: 'Организация не найдена' })
@@ -41,7 +38,6 @@ export class OrganizationsController {
   }
 
   @Patch(':id')
-  @RequirePermissions('organizations.update')
   @ApiOperation({ summary: 'Обновление организации' })
   @ApiResponse({ status: 200, description: 'Организация обновлена' })
   @ApiResponse({ status: 404, description: 'Организация не найдена' })
@@ -49,8 +45,15 @@ export class OrganizationsController {
     return this.organizationsService.update(id, updateOrganizationDto);
   }
 
+  @Get(':id/members')
+  @ApiOperation({ summary: 'Получение участников организации' })
+  @ApiResponse({ status: 200, description: 'Список участников организации' })
+  @ApiResponse({ status: 404, description: 'Организация не найдена' })
+  async getOrganizationMembers(@Param('id') id: string) {
+    return this.organizationsService.getOrganizationMembers(id);
+  }
+
   @Delete(':id')
-  @RequirePermissions('organizations.delete')
   @ApiOperation({ summary: 'Удаление организации' })
   @ApiResponse({ status: 200, description: 'Организация удалена' })
   @ApiResponse({ status: 404, description: 'Организация не найдена' })

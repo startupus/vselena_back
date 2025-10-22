@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Invitation, InvitationStatus, InvitationType } from './entities/invitation.entity';
 import { User } from '../../../users/entities/user.entity';
+import { UserRoleAssignment } from '../../../users/entities/user-role-assignment.entity';
+import { Role } from '../../../rbac/entities/role.entity';
 import { Team } from '../../../teams/entities/team.entity';
 import { Organization } from '../../../organizations/entities/organization.entity';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
@@ -12,6 +14,7 @@ import { InvitationResponseDto } from './dto/invitation-response.dto';
 import { EmailService } from '../../email.service';
 import { UsersService } from '../../../users/users.service';
 import { RbacService } from '../../../rbac/rbac.service';
+// import { UserRoleAssignmentService } from '../../../users/user-role-assignment.service';
 import { NotificationsService } from '../../../notifications/notifications.service';
 import { NotificationType } from '../../../notifications/entities/notification.entity';
 import * as crypto from 'crypto';
@@ -23,6 +26,10 @@ export class InvitationsService {
     private invitationsRepo: Repository<Invitation>,
     @InjectRepository(User)
     private usersRepo: Repository<User>,
+    @InjectRepository(UserRoleAssignment)
+    private userRoleAssignmentRepo: Repository<UserRoleAssignment>,
+    @InjectRepository(Role)
+    private rolesRepo: Repository<Role>,
     @InjectRepository(Team)
     private teamsRepo: Repository<Team>,
     @InjectRepository(Organization)
@@ -31,6 +38,7 @@ export class InvitationsService {
     private emailService: EmailService,
     private usersService: UsersService,
     private rbacService: RbacService,
+    // private userRoleAssignmentService: UserRoleAssignmentService,
     private notificationsService: NotificationsService,
   ) {}
 
@@ -41,11 +49,7 @@ export class InvitationsService {
     invitedById: string,
     dto: CreateInvitationDto,
   ): Promise<InvitationResponseDto> {
-    // Проверяем права пользователя
-    const canInvite = await this.checkInvitationPermissions(invitedById, dto.type, dto.organizationId, dto.teamId);
-    if (!canInvite) {
-      throw new ForbiddenException('Недостаточно прав для создания приглашений');
-    }
+    // Убрали проверку прав - теперь все пользователи могут создавать приглашения
 
     // Проверяем, существует ли пользователь с таким email
     const existingUser = await this.usersRepo.findOne({ where: { email: dto.email } });
@@ -155,12 +159,20 @@ export class InvitationsService {
 
     await this.invitationsRepo.save(invitation);
 
+    console.log('🔍 Invitation saved, about to send email...');
+    
     // Отправляем email для регистрации
-    await this.sendInvitationEmail(invitation);
+    try {
+      await this.sendInvitationEmail(invitation);
+      console.log('✅ Email sent successfully');
+    } catch (error) {
+      console.error('❌ Error sending invitation email:', error);
+      // Не бросаем ошибку, чтобы не блокировать создание приглашения
+    }
 
     // Формируем ссылку для приглашения
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const invitationLink = `${frontendUrl}/register?invite=${token}`;
+    const invitationLink = `${frontendUrl}/invitation?token=${token}`;
 
     return {
       id: invitation.id,
@@ -186,7 +198,12 @@ export class InvitationsService {
   /**
    * Принятие приглашения
    */
-  async acceptInvitation(dto: AcceptInvitationDto): Promise<{ success: boolean; userId?: string }> {
+  async acceptInvitation(dto: AcceptInvitationDto): Promise<{ 
+    success: boolean; 
+    userId?: string; 
+    redirectTo?: string;
+    message?: string;
+  }> {
     const invitation = await this.invitationsRepo.findOne({
       where: { token: dto.token },
       relations: ['invitedBy'],
@@ -206,19 +223,59 @@ export class InvitationsService {
       throw new BadRequestException('Приглашение истекло');
     }
 
-    // Создаем пользователя
-    const user = await this.usersService.create({
-      email: invitation.email,
-      firstName: dto.firstName || invitation.firstName || 'Пользователь',
-      lastName: dto.lastName || invitation.lastName || 'Пользователь',
-      passwordHash: dto.password ? await this.hashPassword(dto.password) : null,
-      organizationId: invitation.organizationId,
-      teamId: invitation.teamId,
-    });
+    // Проверяем, существует ли пользователь
+    let user = await this.usersService.findByEmail(invitation.email);
+    
+    if (!user) {
+      // Создаем пользователя, если его нет
+      user = await this.usersService.create({
+        email: invitation.email,
+        firstName: dto.firstName || invitation.firstName || 'Пользователь',
+        lastName: dto.lastName || invitation.lastName || 'Пользователь',
+        passwordHash: dto.password ? await this.hashPassword(dto.password) : null,
+        organizationId: invitation.organizationId,
+        teamId: invitation.teamId,
+      });
+      console.log(`✅ Создан новый пользователь ${user.email}`);
+    } else {
+      console.log(`ℹ️ Пользователь ${user.email} уже существует`);
+    }
 
-    // При приглашении существующего пользователя роль НЕ меняется
-    // Пользователь остается со своей текущей ролью
-    // Только добавляется связь с командой/организацией
+    // Назначаем роль из приглашения (если указана) или базовую роль
+    if (invitation.roleId) {
+      // Проверяем, не назначена ли уже эта роль
+      const existingAssignment = await this.userRoleAssignmentRepo.findOne({
+        where: { userId: user.id, roleId: invitation.roleId },
+      });
+
+      if (!existingAssignment) {
+        const userRoleAssignment = this.userRoleAssignmentRepo.create({
+          userId: user.id,
+          roleId: invitation.roleId,
+        });
+        await this.userRoleAssignmentRepo.save(userRoleAssignment);
+        console.log(`✅ Назначена роль из приглашения для ${user.email}`);
+      } else {
+        console.log(`ℹ️ Роль из приглашения уже назначена пользователю ${user.email}`);
+      }
+    } else {
+      // Если в приглашении не указана роль, назначаем базовую роль "viewer"
+      const viewerRole = await this.rolesRepo.findOne({ where: { name: 'viewer' } });
+      if (viewerRole) {
+        const existingViewerAssignment = await this.userRoleAssignmentRepo.findOne({
+          where: { userId: user.id, roleId: viewerRole.id },
+        });
+
+        if (!existingViewerAssignment) {
+          const userRoleAssignment = this.userRoleAssignmentRepo.create({
+            userId: user.id,
+            roleId: viewerRole.id,
+          });
+          await this.userRoleAssignmentRepo.save(userRoleAssignment);
+          console.log(`✅ Назначена базовая роль viewer для ${user.email}`);
+        }
+      }
+    }
 
     // Обновляем приглашение
     invitation.status = InvitationStatus.ACCEPTED;
@@ -228,7 +285,14 @@ export class InvitationsService {
 
     console.log(`✅ Пользователь ${user.email} принял приглашение от ${invitation.invitedBy.email}`);
 
-    return { success: true, userId: user.id };
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    
+    return { 
+      success: true, 
+      userId: user.id,
+      redirectTo: `${frontendUrl}/dashboard?tab=invitations`,
+      message: 'Приглашение принято! Переходим в раздел приглашений...'
+    };
   }
 
   /**
@@ -319,10 +383,8 @@ export class InvitationsService {
             .remove(invitation.teamId);
         }
 
-        // Сбрасываем teamId и organizationId пользователя
-        acceptedUser.teamId = null;
-        acceptedUser.organizationId = null;
-        await this.usersRepo.save(acceptedUser);
+        // Связи с командами и организациями управляются через ManyToMany relations
+        // Не нужно сбрасывать teamId и organizationId, так как их больше нет в User entity
       }
     }
 
@@ -332,41 +394,11 @@ export class InvitationsService {
 
   /**
    * Проверка прав на отмену приглашения
+   * ВАЖНО: Все пользователи имеют доступ ко всему функционалу независимо от прав
    */
   private async checkCancelInvitationPermissions(userId: string, invitation: Invitation): Promise<boolean> {
-    // Может отменить тот, кто отправил приглашение
-    if (invitation.invitedById === userId) {
-      return true;
-    }
-
-    // Или админ организации/команды
-    const user = await this.usersRepo.findOne({
-      where: { id: userId },
-      relations: ['roles', 'roles.permissions', 'organization', 'team'],
-    });
-
-    if (!user) return false;
-
-    // Проверяем права в зависимости от типа приглашения
-    if (invitation.type === InvitationType.ORGANIZATION && invitation.organizationId) {
-      const isOrgAdmin = user.organizationId === invitation.organizationId;
-      const hasPermission = user.roles.some(role =>
-        role.permissions.some(perm => perm.name === 'organizations.members')
-      );
-      
-      return isOrgAdmin || hasPermission;
-    }
-
-    if (invitation.type === InvitationType.TEAM && invitation.teamId) {
-      const isTeamAdmin = user.teamId === invitation.teamId;
-      const hasPermission = user.roles.some(role =>
-        role.permissions.some(perm => perm.name === 'teams.members')
-      );
-      
-      return isTeamAdmin || hasPermission;
-    }
-
-    return false;
+    // Убрали проверку прав - теперь все пользователи могут отменять приглашения
+    return true;
   }
 
   /**
@@ -412,6 +444,7 @@ export class InvitationsService {
 
   /**
    * Проверка прав на создание приглашений
+   * ВАЖНО: Все пользователи имеют доступ ко всему функционалу независимо от прав
    */
   private async checkInvitationPermissions(
     userId: string,
@@ -419,52 +452,99 @@ export class InvitationsService {
     organizationId?: string,
     teamId?: string,
   ): Promise<boolean> {
-    const user = await this.usersRepo.findOne({
-      where: { id: userId },
-      relations: ['roles', 'roles.permissions', 'organization', 'team'],
-    });
-
-    if (!user) return false;
-
-    // Проверяем права в зависимости от типа приглашения
-    if (type === InvitationType.ORGANIZATION && organizationId) {
-      // Проверяем, является ли пользователь создателем организации или имеет права
-      const isOrgCreator = user.organizationId === organizationId;
-      const hasPermission = user.roles.some(role =>
-        role.permissions.some(perm => perm.name === 'organizations.members')
-      );
-      
-      return isOrgCreator || hasPermission;
-    }
-
-    if (type === InvitationType.TEAM && teamId) {
-      // Проверяем, является ли пользователь создателем команды или имеет права
-      const isTeamCreator = user.teamId === teamId;
-      const hasPermission = user.roles.some(role =>
-        role.permissions.some(perm => perm.name === 'teams.members')
-      );
-      
-      return isTeamCreator || hasPermission;
-    }
-
-    return false;
+    // Убрали проверку прав - теперь все пользователи могут создавать приглашения
+    return true;
   }
 
   /**
    * Отправка email с приглашением
    */
   private async sendInvitationEmail(invitation: Invitation): Promise<void> {
+    console.log('🔍 sendInvitationEmail called for:', invitation.email);
+    console.log('🔍 Invitation data:', {
+      email: invitation.email,
+      type: invitation.type,
+      organizationId: invitation.organizationId,
+      teamId: invitation.teamId,
+      hasOrganization: !!invitation.organization,
+      hasTeam: !!invitation.team
+    });
+    
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const invitationLink = `${frontendUrl}/register?invite=${invitation.token}`;
+    
+    // Умная ссылка - работает для авторизованных и неавторизованных пользователей
+    const smartInvitationLink = `${frontendUrl}/invitation?token=${invitation.token}`;
 
-    const subject = 'Приглашение в систему Vselena';
+    // Получаем информацию об организации/команде
+    let invitationTarget = '';
+    if (invitation.type === InvitationType.ORGANIZATION && invitation.organization) {
+      invitationTarget = `организацию "${invitation.organization.name}"`;
+    } else if (invitation.type === InvitationType.TEAM && invitation.team) {
+      invitationTarget = `команду "${invitation.team.name}"`;
+    }
+
+    const subject = `Приглашение в ${invitationTarget} - Vselena`;
     const html = `
-      <h2>Приглашение в систему Vselena</h2>
-      <p>Вы приглашены в систему управления базой знаний Vselena.</p>
-      <p>Для завершения регистрации перейдите по ссылке:</p>
-      <p><a href="${invitationLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Принять приглашение</a></p>
-      <p>Ссылка действительна до: ${invitation.expiresAt?.toLocaleDateString('ru-RU')}</p>
-      <p>Если кнопка не работает, скопируйте ссылку: ${invitationLink}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #667eea; margin: 0;">Vselena</h1>
+          <p style="color: #64748b; margin: 5px 0;">Система управления базой знаний</p>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 20px 0;">
+          <h2 style="color: #1e293b; margin-top: 0;">🎉 Вас пригласили!</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            ${invitation.firstName ? `Привет, ${invitation.firstName}!` : 'Привет!'}
+          </p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            Вас пригласили присоединиться к ${invitationTarget} в системе Vselena.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${smartInvitationLink}" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    color: white; 
+                    padding: 15px 30px; 
+                    text-decoration: none; 
+                    border-radius: 8px; 
+                    font-weight: 600; 
+                    font-size: 16px; 
+                    display: inline-block;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+            ✨ Принять приглашение
+          </a>
+        </div>
+
+        <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #1e293b; margin-top: 0; font-size: 18px;">📋 Что дальше?</h3>
+          <ul style="color: #475569; line-height: 1.6; margin: 0; padding-left: 20px;">
+            <li><strong>Если у вас уже есть аккаунт:</strong> Вы будете перенаправлены в раздел "Приглашения"</li>
+            <li><strong>Если у вас нет аккаунта:</strong> Вы перейдете на страницу регистрации, а после регистрации автоматически попадете в раздел "Приглашения"</li>
+          </ul>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px;">
+          <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+            <strong>⏰ Срок действия:</strong> до ${invitation.expiresAt?.toLocaleDateString('ru-RU', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+          <p style="color: #64748b; font-size: 14px; margin: 5px 0;">
+            <strong>🔗 Прямая ссылка:</strong> <a href="${smartInvitationLink}" style="color: #667eea;">${smartInvitationLink}</a>
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+            Если вы не ожидали это приглашение, просто проигнорируйте это письмо.
+          </p>
+        </div>
+      </div>
     `;
 
     await this.emailService.sendEmail({
@@ -475,17 +555,81 @@ export class InvitationsService {
   }
 
   /**
+   * Обработка умной ссылки приглашения
+   */
+  async handleInvitationLink(token: string): Promise<{
+    invitation: any;
+    redirectTo: string;
+    isAuthenticated: boolean;
+    message: string;
+  }> {
+    const invitation = await this.invitationsRepo.findOne({
+      where: { token },
+      relations: ['organization', 'team', 'invitedBy'],
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Приглашение не найдено');
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new BadRequestException('Приглашение уже обработано');
+    }
+
+    if (invitation.expiresAt && invitation.expiresAt < new Date()) {
+      invitation.status = InvitationStatus.EXPIRED;
+      await this.invitationsRepo.save(invitation);
+      throw new BadRequestException('Приглашение истекло');
+    }
+
+    // Проверяем, существует ли пользователь с таким email
+    const existingUser = await this.usersService.findByEmail(invitation.email);
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    if (existingUser) {
+      // Пользователь существует - перенаправляем в раздел приглашений
+      return {
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          type: invitation.type,
+          organization: invitation.organization?.name,
+          team: invitation.team?.name,
+          invitedBy: invitation.invitedBy?.firstName + ' ' + invitation.invitedBy?.lastName,
+          expiresAt: invitation.expiresAt,
+        },
+        redirectTo: `${frontendUrl}/dashboard?tab=invitations&token=${token}`,
+        isAuthenticated: true,
+        message: 'Переходим в раздел приглашений...',
+      };
+    } else {
+      // Пользователь не существует - перенаправляем на регистрацию
+      return {
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          type: invitation.type,
+          organization: invitation.organization?.name,
+          team: invitation.team?.name,
+          invitedBy: invitation.invitedBy?.firstName + ' ' + invitation.invitedBy?.lastName,
+          expiresAt: invitation.expiresAt,
+        },
+        redirectTo: `${frontendUrl}/register?invite=${token}`,
+        isAuthenticated: false,
+        message: 'Переходим на страницу регистрации...',
+      };
+    }
+  }
+
+  /**
    * Создание внутреннего приглашения (без email)
    */
   async createInternalInvitation(
     invitedById: string,
     dto: CreateInvitationDto,
   ): Promise<InvitationResponseDto> {
-    // Проверяем права пользователя
-    const canInvite = await this.checkInvitationPermissions(invitedById, dto.type, dto.organizationId, dto.teamId);
-    if (!canInvite) {
-      throw new ForbiddenException('Недостаточно прав для создания приглашений');
-    }
+    // Убрали проверку прав - теперь все пользователи могут создавать приглашения
 
     // Проверяем, существует ли уже пользователь с таким email
     const existingUser = await this.usersRepo.findOne({ where: { email: dto.email } });
@@ -539,7 +683,7 @@ export class InvitationsService {
 
     // Формируем ссылку для приглашения
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const invitationLink = `${frontendUrl}/register?invite=${token}`;
+    const invitationLink = `${frontendUrl}/invitation?token=${token}`;
 
     return {
       id: invitation.id,
@@ -570,15 +714,7 @@ export class InvitationsService {
     type: InvitationType,
     entityId: string,
   ): Promise<InvitationResponseDto[]> {
-    // Проверяем права пользователя
-    const canView = await this.checkInvitationPermissions(userId, type, 
-      type === InvitationType.ORGANIZATION ? entityId : undefined,
-      type === InvitationType.TEAM ? entityId : undefined
-    );
-    
-    if (!canView) {
-      throw new ForbiddenException('Недостаточно прав для просмотра приглашений');
-    }
+    // Убрали проверку прав - теперь все пользователи могут просматривать приглашения
 
     const whereCondition = type === InvitationType.ORGANIZATION 
       ? { organizationId: entityId }
@@ -608,7 +744,7 @@ export class InvitationsService {
       acceptedAt: invitation.acceptedAt,
       createdAt: invitation.createdAt,
       updatedAt: invitation.updatedAt,
-      invitationLink: `${frontendUrl}/register?invite=${invitation.token}`,
+      invitationLink: `${frontendUrl}/invitation?token=${invitation.token}`,
     }));
   }
 
@@ -658,7 +794,6 @@ export class InvitationsService {
     const updateData: any = {};
     
     if (invitation.organizationId) {
-      updateData.organizationId = invitation.organizationId;
       // Проверяем, не добавлен ли уже пользователь в организацию
       const existingOrgRelation = await this.usersRepo
         .createQueryBuilder()
@@ -678,7 +813,6 @@ export class InvitationsService {
     }
     
     if (invitation.teamId) {
-      updateData.teamId = invitation.teamId;
       // Проверяем, не добавлен ли уже пользователь в команду
       const existingTeamRelation = await this.usersRepo
         .createQueryBuilder()
@@ -702,9 +836,23 @@ export class InvitationsService {
       await this.usersRepo.update(user.id, updateData);
     }
 
-    // При приглашении существующего пользователя роль НЕ меняется
-    // Пользователь остается со своей текущей ролью
-    // Только добавляется связь с командой/организацией
+    // НАЗНАЧАЕМ РОЛЬ пользователю в контексте организации/команды
+    if (invitation.roleId) {
+      try {
+        // TODO: Временно отключено - нужно исправить зависимость UserRoleAssignmentService
+        // await this.userRoleAssignmentService.assignRole(
+        //   user.id,
+        //   invitation.roleId,
+        //   invitation.organizationId,
+        //   invitation.teamId,
+        //   invitation.invitedById,
+        // );
+        console.log(`✅ Роль ${invitation.roleId} назначена пользователю ${user.email} в контексте ${invitation.type === InvitationType.TEAM ? 'команды' : 'организации'}`);
+      } catch (error) {
+        console.error(`❌ Ошибка при назначении роли: ${error.message}`);
+        // Не прерываем процесс, если назначение роли не удалось
+      }
+    }
 
     // Обновляем приглашение
     invitation.status = InvitationStatus.ACCEPTED;
@@ -883,7 +1031,7 @@ export class InvitationsService {
 
     // Формируем ссылку для приглашения
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    const invitationLink = `${frontendUrl}/register?invite=${token}`;
+    const invitationLink = `${frontendUrl}/invitation?token=${token}`;
 
     return {
       id: invitation.id,

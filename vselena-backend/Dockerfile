@@ -12,6 +12,8 @@ FROM base AS development
 ENV NODE_ENV=development
 RUN npm install
 COPY . .
+# Устанавливаем права доступа для исполняемых файлов
+RUN chmod +x node_modules/.bin/*
 EXPOSE 3001
 CMD ["npm", "run", "start:dev"]
 

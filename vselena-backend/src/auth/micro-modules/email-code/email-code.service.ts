@@ -97,8 +97,8 @@ export class EmailCodeService {
     const payload = {
       sub: user.id,
       email: user.email,
-      organizationId: user.organizationId,
-      teamId: user.teamId,
+      organizationId: user.organizations?.[0]?.id || null,
+      teamId: user.teams?.[0]?.id || null,
       roles: user.roles.map(r => r.name),
       permissions,
     };

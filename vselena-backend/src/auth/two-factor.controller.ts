@@ -44,8 +44,7 @@ export class TwoFactorController {
   }
 
   @Get('my-codes')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('users.read')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получение активных кодов текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Список активных кодов' })
@@ -54,8 +53,7 @@ export class TwoFactorController {
   }
 
   @Delete('my-codes')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('users.update')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Отзыв всех активных кодов текущего пользователя' })
   @ApiResponse({ status: 200, description: 'Все коды отозваны' })
@@ -65,8 +63,7 @@ export class TwoFactorController {
   }
 
   @Get('user/:userId/codes')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('users.read')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получение активных кодов пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'Список активных кодов пользователя' })
@@ -75,8 +72,7 @@ export class TwoFactorController {
   }
 
   @Delete('user/:userId/codes')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('users.update')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Отзыв всех активных кодов пользователя (только для админов)' })
   @ApiResponse({ status: 200, description: 'Все коды пользователя отозваны' })

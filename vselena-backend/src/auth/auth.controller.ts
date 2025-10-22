@@ -66,8 +66,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить текущего пользователя' })
-  getMe(@CurrentUser() user: any) {
-    return user;
+  async getMe(@CurrentUser() user: any) {
+    // Загружаем актуальные данные пользователя из БД
+    const currentUser = await this.authService.getCurrentUser(user.userId);
+    return currentUser;
   }
 
   @Post('smart-auth')
@@ -143,15 +145,47 @@ export class AuthController {
     return this.authService.sendEmailVerification(dto);
   }
 
+  @Post('email-verification/send-button')
+  @Public()
+  @ApiOperation({
+    summary: 'Отправить письмо подтверждения email (с кнопкой)',
+    description: 'Отправляет письмо с кнопкой для подтверждения email адреса - используется фронтендом'
+  })
+  @ApiResponse({ status: 200, description: 'Письмо отправлено', type: EmailVerificationResponseDto })
+  @ApiResponse({ status: 404, description: 'Пользователь не найден' })
+  @ApiResponse({ status: 400, description: 'Email уже подтвержден' })
+  async sendEmailVerificationButton(@Body() dto: SendEmailVerificationDto) {
+    console.log('🎯 ВЫЗВАН НОВЫЙ ENDPOINT: /api/auth/email-verification/send-button');
+    console.log('📧 Email:', dto.email);
+    return this.authService.sendEmailVerification(dto);
+  }
+
   @Post('email-verification/verify')
   @Public()
-  @ApiOperation({ 
-    summary: 'Подтвердить email по токену', 
-    description: 'Подтверждает email адрес по токену из письма и повышает роль пользователя' 
+  @ApiOperation({
+    summary: 'Подтвердить email по токену',
+    description: 'Подтверждает email адрес по токену из письма'
   })
   @ApiResponse({ status: 200, description: 'Email подтвержден', type: EmailVerificationResponseDto })
-  @ApiResponse({ status: 400, description: 'Неверный или истекший токен' })
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto);
+  @ApiResponse({ status: 400, description: 'Неверный или истёкший токен' })
+  async verifyEmailToken(@Body() dto: { token: string }) {
+    console.log('🔍 ПОДТВЕРЖДЕНИЕ EMAIL ПО ТОКЕНУ:', dto.token);
+    return this.authService.verifyEmailToken(dto.token);
   }
+
+  @Post('2fa/email/verify')
+  @Public()
+  @ApiOperation({
+    summary: 'Вход по коду с почты (2FA)',
+    description: 'Подтверждает вход по 6-значному коду, отправленному на email'
+  })
+  @ApiResponse({ status: 200, description: 'Вход выполнен успешно' })
+  @ApiResponse({ status: 400, description: 'Неверный код или email' })
+  async verifyEmail2FACode(@Body() dto: { email: string; code: string }) {
+    console.log('🚨 ВЫЗВАН ENDPOINT: /api/auth/2fa/email/verify');
+    console.log('📧 Email:', dto.email);
+    console.log('🔢 Code:', dto.code);
+    return this.authService.verifyEmail2FACode(dto.email, dto.code);
+  }
+
 }

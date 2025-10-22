@@ -4,6 +4,8 @@ import { InvitationsController } from './invitations.controller';
 import { InvitationsService } from './invitations.service';
 import { Invitation } from './entities/invitation.entity';
 import { User } from '../../../users/entities/user.entity';
+import { UserRoleAssignment } from '../../../users/entities/user-role-assignment.entity';
+import { Role } from '../../../rbac/entities/role.entity';
 import { Team } from '../../../teams/entities/team.entity';
 import { Organization } from '../../../organizations/entities/organization.entity';
 import { EmailService } from '../../email.service';
@@ -13,7 +15,7 @@ import { NotificationsModule } from '../../../notifications/notifications.module
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Invitation, User, Team, Organization]),
+    TypeOrmModule.forFeature([Invitation, User, UserRoleAssignment, Role, Team, Organization]),
     UsersModule,
     RbacModule,
     NotificationsModule,

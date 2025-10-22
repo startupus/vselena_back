@@ -40,7 +40,6 @@ export class UserRoleManagementController {
   ) {}
 
   @Post('promote')
-  @RequirePermissions('roles.assign')
   @ApiOperation({ summary: 'Повышение роли пользователя (только для супер-админов)' })
   @ApiResponse({ status: 200, description: 'Роль успешно повышена' })
   @ApiResponse({ status: 403, description: 'Недостаточно прав' })
@@ -57,7 +56,6 @@ export class UserRoleManagementController {
   }
 
   @Post('demote')
-  @RequirePermissions('roles.assign')
   @ApiOperation({ summary: 'Понижение роли пользователя (только для супер-админов)' })
   @ApiResponse({ status: 200, description: 'Роль успешно понижена' })
   @ApiResponse({ status: 403, description: 'Недостаточно прав' })
@@ -74,7 +72,6 @@ export class UserRoleManagementController {
   }
 
   @Post('check-promotions/:userId')
-  @RequirePermissions('roles.assign')
   @ApiOperation({ summary: 'Проверка и применение условий для автоматического повышения ролей' })
   @ApiResponse({ status: 200, description: 'Условия проверены и применены' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
@@ -83,7 +80,6 @@ export class UserRoleManagementController {
   }
 
   @Get('available-roles/:userId')
-  @RequirePermissions('roles.read')
   @ApiOperation({ summary: 'Получение доступных ролей для повышения' })
   @ApiResponse({ status: 200, description: 'Список доступных ролей' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
@@ -92,7 +88,6 @@ export class UserRoleManagementController {
   }
 
   @Get('role-history/:userId')
-  @RequirePermissions('roles.read')
   @ApiOperation({ summary: 'Получение истории изменений ролей пользователя' })
   @ApiResponse({ status: 200, description: 'История ролей пользователя' })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })

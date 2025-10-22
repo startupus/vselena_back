@@ -7,6 +7,8 @@ import { EmailService } from '../../../email.service';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshToken } from '../../../entities/refresh-token.entity';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class EmailTwoFactorService {
@@ -19,6 +21,7 @@ export class EmailTwoFactorService {
     private refreshTokenRepo: Repository<RefreshToken>,
     private emailService: EmailService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -49,7 +52,7 @@ export class EmailTwoFactorService {
         status: 'pending' as any,
       });
 
-      // Отправляем email
+      // Отправляем email с кодом
       await this.emailService.sendVerificationCode(email, code);
 
       console.log(`📧 2FA код отправлен на email: ${email}`);
@@ -144,10 +147,13 @@ export class EmailTwoFactorService {
    * Поиск пользователя по email
    */
   async findUserByEmail(email: string): Promise<User | null> {
-    return this.userRepo.findOne({
+    console.log(`🔍 Поиск пользователя по email: ${email}`);
+    const user = await this.userRepo.findOne({
       where: { email },
-      relations: ['roles', 'roles.permissions'],
+      relations: ['organizations', 'teams'],
     });
+    console.log(`🔍 Результат поиска: ${user ? 'найден' : 'не найден'}`);
+    return user;
   }
 
   /**
@@ -159,8 +165,8 @@ export class EmailTwoFactorService {
     const accessToken = this.jwtService.sign({
       sub: user.id,
       email: user.email,
-      organizationId: user.organizationId,
-      teamId: user.teamId,
+      organizationId: user.organizations?.[0]?.id || null,
+      teamId: user.teams?.[0]?.id || null,
       roles: user.roles?.map(r => r.name) || [],
       permissions,
     });

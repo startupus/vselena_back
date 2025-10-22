@@ -12,12 +12,18 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // CORS
+  const frontendUrl = configService.get('FRONTEND_URL', 'http://localhost:3000');
   app.enableCors({
     origin: [
+      frontendUrl,
       'http://localhost:3000',
       'http://localhost:3002',
       'http://127.0.0.1:3000',
-      'http://127.0.0.1:3002'
+      'http://127.0.0.1:3002',
+      'http://45.144.176.42:3000',
+      'http://45.144.176.42:3002',
+      'https://vselena.ldmco.ru',
+      'http://vselena.ldmco.ru'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

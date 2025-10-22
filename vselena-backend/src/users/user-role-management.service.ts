@@ -249,7 +249,7 @@ export class UserRoleManagementService {
         targetRole: 'manager',
         priority: 30,
         checkCondition: async (user: User) => {
-          return user.teamId !== null;
+          return user.teams && user.teams.length > 0;
         },
       },
       {

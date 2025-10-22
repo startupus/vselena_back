@@ -23,15 +23,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * Результат попадает в request.user
    */
   async validate(payload: JwtPayload): Promise<any> {
-    const user = await this.usersService.findById(payload.sub);
+    const user = await this.usersService.findById(payload.sub, {
+      relations: ['organizations', 'teams'],
+    });
     
     if (!user || !user.isActive) {
       throw new UnauthorizedException();
     }
 
-    // Извлекаем роли и права из загруженного пользователя
-    const roles = user.roles?.map(role => role.name) || [];
-    const permissions = user.roles?.flatMap(role => role.permissions?.map(perm => perm.name) || []) || [];
+    // Роли и права берем из JWT payload (они уже там)
+    const roles = payload.roles || [];
+    const permissions = payload.permissions || [];
 
     // Возвращаем данные, которые попадут в request.user
     return {
@@ -44,6 +46,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       emailVerified: user.emailVerified,
       organizationId: payload.organizationId,
       teamId: payload.teamId,
+      organizations: user.organizations,
+      teams: user.teams,
       roles: roles,
       permissions: permissions,
     };

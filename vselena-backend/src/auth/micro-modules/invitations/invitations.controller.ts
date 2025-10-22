@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InvitationsService } from './invitations.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
@@ -8,6 +8,7 @@ import { InvitationType } from './entities/invitation.entity';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { CurrentUser } from '../../decorators/current-user.decorator';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { Public } from '../../decorators/public.decorator';
 
 @ApiTags('invitations')
 @Controller('invitations')
@@ -17,7 +18,6 @@ export class InvitationsController {
   constructor(private invitationsService: InvitationsService) {}
 
   @Post()
-  @RequirePermissions('organizations.members', 'teams.members')
   @ApiOperation({ summary: 'Создать приглашение (с email)' })
   @ApiResponse({ status: 201, description: 'Приглашение создано', type: InvitationResponseDto })
   @ApiResponse({ status: 403, description: 'Недостаточно прав' })
@@ -30,7 +30,6 @@ export class InvitationsController {
   }
 
   @Post('internal')
-  @RequirePermissions('organizations.members', 'teams.members')
   @ApiOperation({ summary: 'Создать внутреннее приглашение (без email)' })
   @ApiResponse({ status: 201, description: 'Внутреннее приглашение создано', type: InvitationResponseDto })
   @ApiResponse({ status: 403, description: 'Недостаточно прав' })
@@ -40,6 +39,23 @@ export class InvitationsController {
     @Body() dto: CreateInvitationDto,
   ): Promise<InvitationResponseDto> {
     return this.invitationsService.createInternalInvitation(user.userId, dto);
+  }
+
+  @Get('handle')
+  @Public()
+  @ApiOperation({ summary: 'Обработка умной ссылки приглашения' })
+  @ApiResponse({ status: 200, description: 'Информация о приглашении' })
+  @ApiResponse({ status: 404, description: 'Приглашение не найдено' })
+  @ApiResponse({ status: 400, description: 'Приглашение истекло' })
+  async handleInvitationLink(
+    @Query('token') token: string,
+  ): Promise<{ 
+    invitation: any; 
+    redirectTo: string; 
+    isAuthenticated: boolean;
+    message: string;
+  }> {
+    return this.invitationsService.handleInvitationLink(token);
   }
 
   @Post('accept')

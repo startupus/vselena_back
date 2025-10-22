@@ -83,12 +83,12 @@ export class RbacService {
     }
 
     // Проверка scope: роль должна быть в той же организации
-    if (role.organizationId && role.organizationId !== user.organizationId) {
+    if (role.organizationId && !user.organizations?.some(org => org.id === role.organizationId)) {
       throw new ForbiddenException('Role not in same organization');
     }
 
     // Проверка scope: роль команды только для членов команды
-    if (role.teamId && role.teamId !== user.teamId) {
+    if (role.teamId && !user.teams?.some(team => team.id === role.teamId)) {
       throw new ForbiddenException('Role not in same team');
     }
 
@@ -250,6 +250,16 @@ export class RbacService {
     }
 
     await this.rolesRepo.delete(roleId);
+  }
+
+  /**
+   * Получение всех доступных ролей (системные)
+   */
+  async getAllRoles(): Promise<Role[]> {
+    return this.rolesRepo.find({
+      where: { isSystem: true },
+      relations: ['permissions'],
+    });
   }
 
   /**
