@@ -169,6 +169,45 @@
             font-size: 1rem;
         }
 
+        .email-display {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .email-display i {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .email-display span {
+            flex: 1;
+            font-weight: 500;
+            color: #1a202c;
+        }
+
+        .email-display .btn-link {
+            color: #667eea;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .email-display .btn-link:hover {
+            background: #e2e8f0;
+            color: #4c51bf;
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -612,32 +651,52 @@
                 <!-- Auth Tabs -->
                 <div class="auth-tabs">
                     <button class="auth-tab active">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Вход
+                        <i class="fas fa-envelope"></i>
+                        Вход или регистрация
             </button>
             </div>
 
+                <!-- Email Input Step -->
+                <div id="emailStep" class="auth-step active">
+                    <div class="form-header">
+                        <h2 class="form-title">Введите ваш email</h2>
+                        <p class="form-subtitle">Мы определим, есть ли у вас аккаунт в системе</p>
+                    </div>
+
+                    <form id="emailStepForm" onsubmit="handleEmailStep(event)">
+                        <div class="form-group">
+                            <label class="form-label" for="emailInput">Email</label>
+                            <div class="input-group">
+                                <i class="fas fa-envelope input-icon"></i>
+                                <input type="email" id="emailInput" class="form-input" placeholder="your@email.com" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="emailStepBtn">
+                            <span id="emailStepBtnText">Продолжить</span>
+                            <div class="loading hidden" id="emailStepLoading"></div>
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Login Form -->
-                <div id="loginForm" class="auth-step active">
+                <div id="loginForm" class="auth-step">
                     <div class="form-header">
                         <h2 class="form-title">Вход в систему</h2>
-                        <p class="form-subtitle">Введите свои данные для входа</p>
+                        <p class="form-subtitle">Введите пароль для входа</p>
+                        <div class="email-display">
+                            <i class="fas fa-envelope"></i>
+                            <span id="loginEmailDisplay"></span>
+                            <button type="button" class="btn-link" onclick="goBackToEmailStep()">Изменить email</button>
+                        </div>
         </div>
 
                     <form id="loginFormElement" method="post" onsubmit="handleLogin(event)">
             <div class="form-group">
-                            <label class="form-label" for="loginEmail">Email</label>
-                            <div class="input-group">
-                                <i class="fas fa-envelope input-icon"></i>
-                                <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" required>
-            </div>
-        </div>
-
-            <div class="form-group">
                             <label class="form-label" for="loginPassword">Пароль</label>
                             <div class="input-group">
                                 <i class="fas fa-lock input-icon"></i>
-                                <input type="password" id="loginPassword" class="form-input" placeholder="Введите пароль" required>
+                                <input type="password" id="loginPassword" class="form-input" placeholder="Введите пароль" required autofocus>
                                 <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
                                     <i class="fas fa-eye"></i>
             </button>
@@ -915,19 +974,18 @@
                             <label class="form-label" for="smartPassword">Пароль</label>
                             <div class="input-group">
                                 <i class="fas fa-lock input-icon"></i>
-                                <input type="password" id="smartPassword" class="form-input" placeholder="Создайте пароль" required readonly>
+                                <input type="password" id="smartPassword" class="form-input" placeholder="Создайте пароль" required>
                                 <button type="button" class="password-toggle" onclick="togglePassword('smartPassword')">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
-                            <small style="color: #64748b; font-size: 0.8rem;">Пароль уже заполнен из формы входа</small>
                 </div>
                 
                 <div class="form-group">
                             <label class="form-label" for="smartConfirmPassword">Подтвердите пароль</label>
                             <div class="input-group">
                                 <i class="fas fa-lock input-icon"></i>
-                                <input type="password" id="smartConfirmPassword" class="form-input" placeholder="Повторите пароль" required readonly>
+                                <input type="password" id="smartConfirmPassword" class="form-input" placeholder="Повторите пароль" required>
                                 <button type="button" class="password-toggle" onclick="togglePassword('smartConfirmPassword')">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -972,9 +1030,9 @@
                     </form>
 
                     <div class="form-footer">
-                        <button class="btn-link" onclick="showLoginForm()">
+                        <button class="btn-link" onclick="goBackToEmailStep()">
                             <i class="fas fa-arrow-left"></i>
-                            Вернуться к входу
+                            Вернуться к вводу email
                         </button>
                 </div>
                 </div>
@@ -1044,6 +1102,63 @@
             document.getElementById('loginForm').classList.add('active');
         }
 
+        // Global variable to store current email
+        let currentEmail = '';
+
+        // Handle email step form submission
+        async function handleEmailStep(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('emailInput').value;
+            currentEmail = email;
+
+            // Show loading
+            showLoading('emailStepBtn', 'emailStepBtnText', 'emailStepLoading');
+
+            try {
+                // Check if user exists
+                const response = await apiCall('/api/users/check-email', {
+                    method: 'POST',
+                    body: JSON.stringify({ email })
+                });
+
+                // User exists - show login form
+                showLoginFormWithEmail(email);
+                
+            } catch (error) {
+                console.error('Email check error:', error);
+                
+                // User doesn't exist - show registration form
+                showSmartRegistration(email, '');
+                showMessage('Пользователь не найден. Заполните форму регистрации', 'info');
+            } finally {
+                hideLoading('emailStepBtn', 'emailStepBtnText', 'emailStepLoading');
+            }
+        }
+
+        // Show login form with pre-filled email
+        function showLoginFormWithEmail(email) {
+            document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('loginForm').classList.add('active');
+            
+            // Update email display
+            document.getElementById('loginEmailDisplay').textContent = email;
+            
+            // Focus on password field
+            setTimeout(() => {
+                document.getElementById('loginPassword').focus();
+            }, 100);
+        }
+
+        // Go back to email step
+        function goBackToEmailStep() {
+            document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('emailStep').classList.add('active');
+            
+            // Clear password field
+            document.getElementById('loginPassword').value = '';
+        }
+
         // Show login form
         function showLoginForm() {
             document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
@@ -1055,6 +1170,11 @@
             if (loginTab) {
                 loginTab.classList.add('active');
             }
+            
+            // Pre-fill email if available
+            if (currentEmail) {
+                document.getElementById('loginEmailDisplay').textContent = currentEmail;
+            }
         }
 
         // Show email code form
@@ -1062,8 +1182,12 @@
             document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
             document.getElementById('emailCodeForm').classList.add('active');
             
-            // Clear form
-            document.getElementById('emailCodeEmail').value = '';
+            // Pre-fill email if available
+            if (currentEmail) {
+                document.getElementById('emailCodeEmail').value = currentEmail;
+            } else {
+                document.getElementById('emailCodeEmail').value = '';
+            }
             document.querySelectorAll('#emailCodeForm .otp-input').forEach(input => input.value = '');
             
             // Show send code button, hide confirm button
@@ -1084,18 +1208,33 @@
         function showForgotPassword() {
             document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
             document.getElementById('forgotPasswordForm').classList.add('active');
+            
+            // Pre-fill email if available
+            if (currentEmail) {
+                document.getElementById('forgotEmail').value = currentEmail;
+            }
         }
 
         // Show reset password form
         function showResetPasswordForm() {
             document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
             document.getElementById('resetPasswordForm').classList.add('active');
+            
+            // Pre-fill email if available
+            if (currentEmail) {
+                document.getElementById('resetEmail').value = currentEmail;
+            }
         }
 
         // Show complete registration form
         function showCompleteRegistration() {
             document.querySelectorAll('.auth-step').forEach(step => step.classList.remove('active'));
             document.getElementById('completeRegistrationForm').classList.add('active');
+            
+            // Pre-fill email if available
+            if (currentEmail) {
+                document.getElementById('completeEmail').value = currentEmail;
+            }
         }
 
         // Show smart registration (when user doesn't exist during login)
@@ -1105,6 +1244,9 @@
             
             // Show smart registration form
             document.getElementById('smartRegistrationForm').classList.add('active');
+            
+            // Update current email
+            currentEmail = email;
             
             // Pre-fill email and password
             document.getElementById('smartEmail').value = email;
@@ -1183,7 +1325,7 @@
         async function handleLogin(event) {
             event.preventDefault();
             
-            const email = document.getElementById('loginEmail').value;
+            const email = currentEmail; // Use stored email from email step
             const password = document.getElementById('loginPassword').value;
             const rememberMe = document.getElementById('rememberMe').checked;
 
@@ -1543,7 +1685,7 @@
         async function handleSmartRegistration(event) {
             event.preventDefault();
             
-            const email = document.getElementById('smartEmail').value;
+            const email = currentEmail; // Use stored email
             const password = document.getElementById('smartPassword').value;
             const confirmPassword = document.getElementById('smartConfirmPassword').value;
             const firstName = document.getElementById('smartFirstName').value;
