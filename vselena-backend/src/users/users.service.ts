@@ -252,8 +252,12 @@ export class UsersService {
         });
       }
 
+      // Фильтруем команды пользователя - показываем только доступные команды
+      const filteredTeams = user.teams?.filter(team => accessibleTeamIds.has(team.id)) || [];
+      
       return {
         ...user,
+        teams: filteredTeams, // Заменяем все команды на отфильтрованные
         rolesByContext
       };
     });
@@ -370,6 +374,14 @@ export class UsersService {
       throw new NotFoundException('Current user not found');
     }
 
+    // Сначала получаем ID старой организации пользователя
+    const oldOrgAssignment = await this.usersRepo
+      .createQueryBuilder()
+      .select('organization_id')
+      .from('user_organizations', 'uo')
+      .where('uo.user_id = :userId', { userId })
+      .getRawOne();
+
     // Обновляем связь в таблице user_organizations
     // Сначала удаляем старые связи
     await this.usersRepo
@@ -390,6 +402,45 @@ export class UsersService {
           organization_id: organizationId
         })
         .execute();
+
+      // Обновляем роли пользователя - удаляем старые роли организации и добавляем базовую роль для новой организации
+      // Удаляем роли только для старой организации
+      if (oldOrgAssignment?.organization_id) {
+        await this.usersRepo
+          .createQueryBuilder()
+          .delete()
+          .from('user_role_assignments')
+          .where('userId = :userId', { userId })
+          .andWhere('organizationId = :oldOrgId', { oldOrgId: oldOrgAssignment.organization_id })
+          .andWhere('teamId IS NULL')
+          .execute();
+      }
+
+      // Добавляем базовую роль viewer для новой организации
+      const viewerRole = await this.usersRepo
+        .createQueryBuilder()
+        .select('role.id')
+        .from('roles', 'role')
+        .where('role.name = :name', { name: 'viewer' })
+        .andWhere('role.isSystem = :isSystem', { isSystem: true })
+        .getRawOne();
+
+      if (viewerRole) {
+        await this.usersRepo
+          .createQueryBuilder()
+          .insert()
+          .into('user_role_assignments')
+          .values({
+            userId,
+            roleId: viewerRole.id,
+            organizationId,
+            teamId: null,
+            assignedBy: currentUserId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .execute();
+      }
     }
 
     // Возвращаем обновленного пользователя
@@ -416,25 +467,34 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Удаляем ВСЕ старые роли пользователя в данной организации/команде
-    if (organizationId || teamId) {
-      await this.usersRepo
-        .createQueryBuilder()
-        .delete()
-        .from('user_role_assignments')
-        .where('userId = :userId', { userId })
-        .andWhere('organizationId = :organizationId', { organizationId: organizationId || null })
-        .andWhere('teamId = :teamId', { teamId: teamId || null })
-        .execute();
-    } else {
-      // Если контекст не указан, удаляем все роли пользователя
-      await this.usersRepo
-        .createQueryBuilder()
-        .delete()
-        .from('user_role_assignments')
-        .where('userId = :userId', { userId })
-        .execute();
+    // Удаляем ВСЕ старые роли пользователя в данном контексте
+    // Если указан контекст (organizationId или teamId), удаляем роли только в этом контексте
+    // Если контекст не указан, удаляем все роли пользователя
+    let deleteQuery = this.usersRepo
+      .createQueryBuilder()
+      .delete()
+      .from('user_role_assignments')
+      .where('userId = :userId', { userId });
+
+    if (organizationId && teamId) {
+      // Удаляем роли в конкретной команде конкретной организации
+      deleteQuery = deleteQuery
+        .andWhere('organizationId = :organizationId', { organizationId })
+        .andWhere('teamId = :teamId', { teamId });
+    } else if (organizationId) {
+      // Удаляем роли в организации (но не в командах)
+      deleteQuery = deleteQuery
+        .andWhere('organizationId = :organizationId', { organizationId })
+        .andWhere('teamId IS NULL');
+    } else if (teamId) {
+      // Удаляем роли в команде (но не в организации)
+      deleteQuery = deleteQuery
+        .andWhere('teamId = :teamId', { teamId })
+        .andWhere('organizationId IS NULL');
     }
+    // Если ни organizationId, ни teamId не указаны, удаляем все роли
+
+    await deleteQuery.execute();
 
     // Добавляем новую роль
     await this.usersRepo
