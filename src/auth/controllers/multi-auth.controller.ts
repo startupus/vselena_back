@@ -321,9 +321,11 @@ export class MultiAuthController {
   async handleGitHubCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Query('bind') bind: string,
+    @Query('userId') userId: string,
     @Res() res: Response,
   ) {
-    this.logger.log(`GitHub OAuth callback received: code=${code?.substring(0, 10)}..., state=${state}`);
+    this.logger.log(`GitHub OAuth callback received: code=${code?.substring(0, 10)}..., state=${state}, bind=${bind}, userId=${userId}`);
     
     try {
       const result = await this.githubAuthService.handleCallback(code, state);
@@ -331,6 +333,30 @@ export class MultiAuthController {
       this.logger.log(`GitHub OAuth callback result: success=${result.success}, user=${result.user?.email || 'none'}`);
       
       if (result.success) {
+        // If this is a binding request (bind=true), we need to merge accounts
+        if (bind === 'true' && userId) {
+          this.logger.log(`GitHub binding request for user ${userId}`);
+          
+          // Check if GitHub account is already linked to another user
+          // If yes, show merge conflict resolution UI
+          // For now, just add GitHub to current user's available methods
+          const currentUser = await this.multiAuthService['usersRepo'].findOne({ where: { id: userId } });
+          if (currentUser && !currentUser.availableAuthMethods.includes('GITHUB')) {
+            currentUser.availableAuthMethods.push('GITHUB');
+            currentUser.githubId = result.user.githubId;
+            currentUser.githubUsername = result.user.githubUsername;
+            currentUser.githubVerified = true;
+            await this.multiAuthService['usersRepo'].save(currentUser);
+            this.logger.log(`GitHub added to user ${userId} available methods`);
+          }
+          
+          // Redirect to dashboard with existing session
+          const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
+          const redirectUrl = `${frontendUrl}/dashboard.html`;
+          this.logger.log(`GitHub OAuth binding redirecting to: ${redirectUrl}`);
+          return res.redirect(redirectUrl);
+        }
+        
         // Генерируем JWT токены для пользователя через AuthService
         const accessToken = await this.authService.generateAccessToken(result.user);
         const refreshToken = await this.authService.generateRefreshToken(result.user);
