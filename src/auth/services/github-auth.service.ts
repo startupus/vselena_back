@@ -93,15 +93,31 @@ export class GitHubAuthService {
         this.logger.log(`Email lookup result: ${userByEmail ? 'found' : 'not found'}`);
         
         if (userByEmail) {
-          // Нужно слияние аккаунтов
-          const conflicts = await this.detectConflicts(userByEmail, userData, emailData);
-          this.logger.log(`Account merge required for email: ${primaryEmail}`);
+          // Обновляем существующего пользователя, добавляя GitHub данные
+          this.logger.log(`Updating existing user with GitHub data: ${primaryEmail}`);
+          userByEmail.githubId = userData.id.toString();
+          userByEmail.githubUsername = userData.login;
+          userByEmail.githubVerified = true;
+          userByEmail.avatarUrl = userData.avatar_url;
+          
+          // Обновляем доступные методы аутентификации
+          if (!userByEmail.availableAuthMethods.includes(AuthMethodType.GITHUB)) {
+            userByEmail.availableAuthMethods.push(AuthMethodType.GITHUB);
+          }
+          
+          // Обновляем метаданные OAuth
+          if (!userByEmail.oauthMetadata) {
+            userByEmail.oauthMetadata = {};
+          }
+          userByEmail.oauthMetadata.github = metadata;
+          
+          // Сохраняем обновленного пользователя
+          const updatedUser = await this.usersRepo.save(userByEmail);
+          this.logger.log(`Updated user with GitHub data: ${updatedUser.id}`);
           
           return {
-            success: false,
-            error: 'Account merge required',
-            requiresMerge: true,
-            conflicts,
+            success: true,
+            user: updatedUser,
           };
         }
       }
