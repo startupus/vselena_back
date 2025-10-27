@@ -389,6 +389,10 @@ export class AuthService {
 
     console.log('DEBUG: permissions extracted:', uniquePermissions);
 
+    console.log('🔍 User availableAuthMethods:', user.availableAuthMethods);
+    console.log('🔍 User primaryAuthMethod:', user.primaryAuthMethod);
+    console.log('🔍 User availableAuthMethods type:', typeof user.availableAuthMethods);
+    
     const result = {
       id: user.id,
       email: user.email,
@@ -403,6 +407,8 @@ export class AuthService {
       twoFactorEnabled: user.twoFactorEnabled,
       twoFactorMethods: user.twoFactorMethods,
       phoneVerified: user.phoneVerified,
+      primaryAuthMethod: user.primaryAuthMethod,
+      availableAuthMethods: user.availableAuthMethods,
       roles: roles,
       permissions: uniquePermissions,
       organizations: user.organizations,
@@ -410,6 +416,9 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+    
+    console.log('🔍 Result availableAuthMethods:', result.availableAuthMethods);
+    console.log('🔍 Result primaryAuthMethod:', result.primaryAuthMethod);
     
     return result;
   }
