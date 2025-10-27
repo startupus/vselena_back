@@ -529,8 +529,9 @@ export class MultiAuthController {
   @Post('telegram-login')
   @Public()
   @ApiOperation({ summary: 'Обработка Telegram Login Widget' })
-  async handleTelegramLogin(@Body() body: { telegramUser: any; bind?: boolean; userId?: string }) {
-    const { telegramUser, bind, userId } = body;
+  async handleTelegramLogin(@Body() body: { telegramUser?: any; bind?: boolean; userId?: string } | any) {
+    const telegramUser = body.telegramUser || body;
+    const { bind, userId } = body;
     const { id, first_name, last_name, username, photo_url, auth_date, hash } = telegramUser;
     
     this.logger.log(`Telegram Login: ${username || first_name} (${id}), bind=${bind}, userId=${userId}`);
@@ -559,13 +560,17 @@ export class MultiAuthController {
         if (telegramId) {
           // Store telegram metadata
           if (!currentUser.messengerMetadata) {
-            currentUser.messengerMetadata = {};
+            currentUser.messengerMetadata = {} as any;
           }
           if (!currentUser.messengerMetadata.telegram) {
-            currentUser.messengerMetadata.telegram = { userId: telegramId, username: username || '' };
+            currentUser.messengerMetadata.telegram = { userId: telegramId, username: username || '' } as any;
           } else {
-            currentUser.messengerMetadata.telegram.userId = telegramId;
-            currentUser.messengerMetadata.telegram.username = username || '';
+            if (currentUser.messengerMetadata.telegram) {
+              currentUser.messengerMetadata.telegram.userId = telegramId;
+              if (currentUser.messengerMetadata.telegram.username !== undefined) {
+                (currentUser.messengerMetadata.telegram as any).username = username || '';
+              }
+            }
           }
           currentUser.phoneVerified = true;
         }
@@ -591,19 +596,25 @@ export class MultiAuthController {
     }
     
     // Находим или создаём пользователя
-    const user = await this.multiAuthService.handleTelegramLogin(telegramUser);
-    
-    if (user) {
-      // Генерируем токены
-      const tokens = await this.generateTokens(user);
+    try {
+      const user = await this.multiAuthService.handleTelegramLogin(telegramUser);
       
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: user,
-      };
-    } else {
-      throw new Error('Не удалось авторизовать пользователя');
+      if (user) {
+        // Генерируем токены
+        const tokens = await this.generateTokens(user);
+        
+        return {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          user: user,
+        };
+      } else {
+        this.logger.error('handleTelegramLogin returned null');
+        throw new Error('Не удалось авторизовать пользователя');
+      }
+    } catch (error) {
+      this.logger.error(`Error in handleTelegramLogin: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
