@@ -185,5 +185,6 @@ export interface OAuthCallbackResult {
   requiresMerge?: boolean;
   mergeRequestId?: string;
   conflicts?: MergeConflicts;
+  alreadyLinked?: boolean;
   error?: string;
 }
