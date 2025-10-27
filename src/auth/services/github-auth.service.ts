@@ -243,6 +243,7 @@ export class GitHubAuthService {
     
     const newUser = {
       email: primaryEmail,
+      passwordHash: null, // OAuth users don't have a password
       firstName: userData.name?.split(' ')[0] || userData.login,
       lastName: userData.name?.split(' ').slice(1).join(' ') || '',
       avatarUrl: userData.avatar_url,
