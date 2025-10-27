@@ -126,6 +126,7 @@ export class GitHubAuthService {
           return {
             success: true,
             user: updatedUser,
+            alreadyLinked: true,
           };
         }
       }
