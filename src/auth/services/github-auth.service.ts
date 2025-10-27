@@ -260,10 +260,12 @@ export class GitHubAuthService {
       primaryAuthMethod: AuthMethodType.GITHUB,
       availableAuthMethods: [AuthMethodType.GITHUB],
       oauthMetadata: metadata,
+      isActive: true,
+      emailVerified: true,
     });
 
     const savedUser = await this.usersRepo.save(newUser);
-    this.logger.log(`Создан новый пользователь через GitHub: ${savedUser.email}`);
+    this.logger.log(`Создан новый пользователь через GitHub: ${savedUser?.email || 'unknown'}`);
     return savedUser;
   }
 
