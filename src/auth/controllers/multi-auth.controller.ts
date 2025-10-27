@@ -323,28 +323,39 @@ export class MultiAuthController {
     @Query('state') state: string,
     @Res() res: Response,
   ) {
+    this.logger.log(`GitHub OAuth callback received: code=${code?.substring(0, 10)}..., state=${state}`);
+    
     try {
       const result = await this.githubAuthService.handleCallback(code, state);
+      
+      this.logger.log(`GitHub OAuth callback result: success=${result.success}, user=${result.user?.email || 'none'}`);
       
       if (result.success) {
         // Генерируем JWT токены для пользователя через AuthService
         const accessToken = await this.authService.generateAccessToken(result.user);
         const refreshToken = await this.authService.generateRefreshToken(result.user);
         
+        this.logger.log(`GitHub OAuth tokens generated: accessToken=${accessToken.substring(0, 20)}..., refreshToken=${refreshToken.substring(0, 20)}...`);
+        
         // Перенаправляем на dashboard с токенами
         const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
         const redirectUrl = `${frontendUrl}/dashboard.html?token=${accessToken}&refreshToken=${refreshToken}`;
+        this.logger.log(`GitHub OAuth redirecting to: ${redirectUrl}`);
         return res.redirect(redirectUrl);
       } else {
+        this.logger.error(`GitHub OAuth failed: ${result.error}`);
         // Перенаправляем на главную с ошибкой
         const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
         const redirectUrl = `${frontendUrl}/index.html?error=${encodeURIComponent(result.error || 'Unknown error')}`;
+        this.logger.log(`GitHub OAuth redirecting to error page: ${redirectUrl}`);
         return res.redirect(redirectUrl);
       }
     } catch (error) {
-      this.logger.warn(`GitHub OAuth callback (mock): ${error.message}`);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
-      const redirectUrl = `${frontendUrl}/auth/success?message=GitHub OAuth работает в test-режиме. Настройте GITHUB_CLIENT_ID для production.`;
+      this.logger.error(`GitHub OAuth callback error: ${error.message}`);
+      this.logger.error(error.stack);
+      const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
+      const redirectUrl = `${frontendUrl}/index.html?error=${encodeURIComponent(error.message || 'Unknown error')}`;
+      this.logger.log(`GitHub OAuth redirecting to error page: ${redirectUrl}`);
       return res.redirect(redirectUrl);
     }
   }
