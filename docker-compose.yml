@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: loginus-db
+    environment:
+      POSTGRES_DB: loginus_dev
+      POSTGRES_USER: loginus
+      POSTGRES_PASSWORD: loginus_secret
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - loginus-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U loginus']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: loginus-backend
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: loginus
+      DB_PASSWORD: loginus_secret
+      DB_DATABASE: loginus_dev
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production-min-32-chars-long
+      JWT_REFRESH_SECRET: your-refresh-secret-key-min-32-chars-long-very-secure
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      FRONTEND_URL: https://loginus.ldmco.ru
+      SWAGGER_ENABLED: true
+      # Email настройки (Yandex SMTP)
+      SMTP_HOST: smtp.yandex.ru
+      SMTP_PORT: 587
+      SMTP_USER: KazakovVladislav2005@yandex.ru
+      SMTP_PASSWORD: 21092005
+      SMTP_FROM: KazakovVladislav2005@yandex.ru
+      # SMS настройки (SmsAero - бесплатные тесты)
+      # ВНИМАНИЕ: Укажите правильные credentials от SmsAero.ru
+      SMSAERO_EMAIL: your-email@smsaero.ru
+      SMSAERO_API_KEY: your-smsaero-api-key
+      SMSAERO_FROM: Loginus
+      # Если SmsAero не настроен, используем SMS.ru как резерв
+      # SMS.ru настроен ниже
+      # Telegram Bot настройки (бесплатно)
+      TELEGRAM_BOT_TOKEN: 8232490271:AAEEvq-yBnFrv0AnSzF2dpFklVT7Wd8Xyyk
+      TELEGRAM_CHAT_ID: 1063129435
+      
+      # GitHub OAuth
+      # ВАЖНО: Callback URL в GitHub App должен быть: http://localhost:3001/api/auth/multi/oauth/github/callback
+      GITHUB_CLIENT_ID: Ov23li3523l5PKz1Jblw
+      GITHUB_CLIENT_SECRET: 74f40856066f25e6041e45348579e1f6373e82e2
+      GITHUB_REDIRECT_URI: http://localhost:3001/api/auth/multi/oauth/github/callback
+      
+      # VKontakte OAuth
+      # VK_CLIENT_ID: ваш-vk-app-id
+      # VK_CLIENT_SECRET: ваш-vk-client-secret
+      
+      # Gosuslugi OAuth  
+      # GOSUSLUGI_CLIENT_ID: ваш-gosuslugi-client-id
+      # GOSUSLUGI_CLIENT_SECRET: ваш-gosuslugi-client-secret
+      # SMS.ru (резерв)
+      SMSRU_API_ID: 1DAD7F88-2950-F76C-0354-ED1888146B19
+      SMSRU_FROM: SMS.RU
+      # 2FA настройки
+      TWO_FACTOR_CODE_EXPIRES_IN_MINUTES: 10
+      TWO_FACTOR_MAX_CODES_PER_HOUR: 100
+    ports:
+      - '3001:3001'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - loginus-network
+    command: npm run start:dev
+    restart: unless-stopped
+
+  frontend:
+    image: node:18-alpine
+    container_name: loginus-frontend
+    working_dir: /app
+    ports:
+      - '3002:3000'
+    volumes:
+      - ../frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - loginus-network
+    command: npm start
+    restart: unless-stopped
+
+  # Adminer для управления БД (опционально)
+  adminer:
+    image: adminer:latest
+    container_name: loginus-adminer
+    ports:
+      - '8080:8080'
+    networks:
+      - loginus-network
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  loginus-network:
+    driver: bridge

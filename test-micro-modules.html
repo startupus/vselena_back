@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест микромодулей Vselena</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .loading {
+            color: #ffc107;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест системы микромодулей Vselena</h1>
+        <p>Этот интерфейс позволяет протестировать все микромодули системы через API.</p>
+    </div>
+
+    <div class="container">
+        <h2>📡 Проверка API</h2>
+        <div class="test-section">
+            <button onclick="testAPI()">Проверить доступность API</button>
+            <div id="api-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔧 Микромодули</h2>
+        <div class="test-section">
+            <button onclick="getMicroModules()">Получить список микромодулей</button>
+            <button onclick="getModuleInfo('email-auth')">Информация о email-auth</button>
+            <button onclick="getModuleInfo('phone-auth')">Информация о phone-auth</button>
+            <button onclick="getModuleInfo('referral-system')">Информация о referral-system</button>
+            <button onclick="getModuleInfo('custom-roles')">Информация о custom-roles</button>
+            <button onclick="getModuleInfo('ui-permissions')">Информация о ui-permissions</button>
+            <div id="modules-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎨 UI Элементы</h2>
+        <div class="test-section">
+            <button onclick="getUIElements()">Получить UI элементы</button>
+            <button onclick="getUIGroups()">Получить группы UI</button>
+            <button onclick="getNavigationMenu()">Получить навигационное меню</button>
+            <div id="ui-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>⚙️ Системные настройки</h2>
+        <div class="test-section">
+            <button onclick="getSystemSettings()">Получить системные настройки</button>
+            <button onclick="getFeatureSettings()">Получить настройки функций</button>
+            <div id="settings-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔐 Аутентификация</h2>
+        <div class="test-section">
+            <button onclick="testLogin()">Тест входа (admin@vselena.ru)</button>
+            <div id="auth-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = content;
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result loading';
+            element.textContent = 'Загрузка...';
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                throw new Error(`Ошибка запроса: ${error.message}`);
+            }
+        }
+
+        async function testAPI() {
+            showLoading('api-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/micro-modules`);
+                showResult('api-result', `✅ API доступен\n\nОтвет:\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('api-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getMicroModules() {
+            showLoading('modules-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/micro-modules`);
+                showResult('modules-result', `📋 Список микромодулей:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('modules-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getModuleInfo(moduleName) {
+            showLoading('modules-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/micro-modules/${moduleName}`);
+                showResult('modules-result', `🔧 Информация о модуле ${moduleName}:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('modules-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getUIElements() {
+            showLoading('ui-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/ui-permissions/elements`);
+                showResult('ui-result', `🎨 UI элементы:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('ui-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getUIGroups() {
+            showLoading('ui-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/ui-permissions/groups`);
+                showResult('ui-result', `📁 Группы UI:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('ui-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getNavigationMenu() {
+            showLoading('ui-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/ui-permissions/navigation`);
+                showResult('ui-result', `🧭 Навигационное меню:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('ui-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getSystemSettings() {
+            showLoading('settings-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/settings/system`);
+                showResult('settings-result', `⚙️ Системные настройки:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('settings-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function getFeatureSettings() {
+            showLoading('settings-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/settings/features`);
+                showResult('settings-result', `🔧 Настройки функций:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('settings-result', `❌ Ошибка: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            showLoading('auth-result');
+            try {
+                const response = await makeRequest(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: 'admin@vselena.ru',
+                        password: 'admin123'
+                    })
+                });
+                showResult('auth-result', `🔐 Успешный вход:\n\n${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('auth-result', `❌ Ошибка входа: ${error.message}`, 'error');
+            }
+        }
+
+        // Автоматическая проверка при загрузке
+        window.onload = function() {
+            console.log('🚀 Запуск тестов микромодулей...');
+            testAPI();
+        };
+    </script>
+</body>
+</html>

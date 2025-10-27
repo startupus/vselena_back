@@ -1,0 +1,1 @@
+SELECT token FROM invitations WHERE id = '7d81f177-ad85-4968-a304-b52c29d72b3f';

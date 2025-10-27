@@ -1,0 +1,1 @@
+SELECT email, "passwordHash" FROM users WHERE email = 'admin@vselena.ru';

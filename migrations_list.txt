@@ -1,0 +1,33 @@
+﻿                        name                        
+----------------------------------------------------
+ CreateOrganizations1731840001000
+ CreateTeams1731840002000
+ CreateUsers1731840003000
+ CreateRoles1731840004000
+ CreatePermissions1731840005000
+ CreateUserRoles1731840006000
+ CreateRolePermissions1731840007000
+ CreateRefreshTokens1731840008000
+ CreateAuditLogs1731840009000
+ AddTwoFactorSettings1731840009001
+ CreatePasswordResetTokens1731840009002
+ CreateSuperAdmin1731840009003
+ CreateEmailVerificationTokens1731840009004
+ CreateTwoFactorCodes1731840010000
+ AddPhoneToUsers1731840011000
+ CreateInvitations1731840012000
+ AddCreatedByToOrganizationsAndTeams1731840012001
+ CreateUserOrganizationsAndTeamsTables1731840012002
+ CreateReferrals1731840012003
+ FixInvitationsCascade1731840012004
+ CreateSystemSettings1731840013000
+ RemoveSlugFromOrganizations1732124000000
+ CreateOrganizationRoles1761340259371
+ AddLevelToRoles1761340259372
+ ReplaceCreatorAndMemberRoles1761340259373
+ UpdateUserRoleAssignments1761340259374
+ FixUserRoleAssignmentsRoleIdNullable1761340259375
+ AddMultiAuthFields1761341000000
+ CreateMultiAuthTables1761341000001
+(29 rows)
+
