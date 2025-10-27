@@ -242,7 +242,6 @@ export class GitHubAuthService {
     const primaryEmail = emailData.find(email => email.primary)?.email;
     
     const newUser = {
-      id: this.generateUserId(),
       email: primaryEmail,
       firstName: userData.name?.split(' ')[0] || userData.login,
       lastName: userData.name?.split(' ').slice(1).join(' ') || '',
@@ -286,11 +285,6 @@ export class GitHubAuthService {
   }
 
   private generateState(): string {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
-  }
-
-  private generateUserId(): string {
     return Math.random().toString(36).substring(2, 15) + 
            Math.random().toString(36).substring(2, 15);
   }
