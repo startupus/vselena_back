@@ -341,8 +341,8 @@ export class MultiAuthController {
           // If yes, show merge conflict resolution UI
           // For now, just add GitHub to current user's available methods
           const currentUser = await this.multiAuthService['usersRepo'].findOne({ where: { id: userId } });
-          if (currentUser && !currentUser.availableAuthMethods.includes('GITHUB')) {
-            currentUser.availableAuthMethods.push('GITHUB');
+          if (currentUser && !currentUser.availableAuthMethods.includes(AuthMethodType.GITHUB)) {
+            currentUser.availableAuthMethods.push(AuthMethodType.GITHUB);
             currentUser.githubId = result.user.githubId;
             currentUser.githubUsername = result.user.githubUsername;
             currentUser.githubVerified = true;
