@@ -362,22 +362,44 @@ export class MultiAuthController {
         if (bind === 'true' && userId) {
           this.logger.log(`GitHub binding request for user ${userId}`);
           
-          // Check if GitHub account is already linked to another user
-          // If yes, show merge conflict resolution UI
-          // For now, just add GitHub to current user's available methods
+          // Get the current user (the one who initiated the binding)
           const currentUser = await this.multiAuthService['usersRepo'].findOne({ where: { id: userId } });
-          if (currentUser && !currentUser.availableAuthMethods.includes(AuthMethodType.GITHUB)) {
-            currentUser.availableAuthMethods.push(AuthMethodType.GITHUB);
-            currentUser.githubId = result.user.githubId;
-            currentUser.githubUsername = result.user.githubUsername;
-            currentUser.githubVerified = true;
-            await this.multiAuthService['usersRepo'].save(currentUser);
-            this.logger.log(`GitHub added to user ${userId} available methods`);
+          
+          if (!currentUser) {
+            this.logger.error(`Current user ${userId} not found`);
+            const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
+            return res.redirect(`${frontendUrl}/index.html?error=User not found`);
           }
           
-          // Redirect to dashboard with existing session
+          this.logger.log(`Current user: ${currentUser.email}, available methods: ${JSON.stringify(currentUser.availableAuthMethods)}`);
+          
+          // Check if result.user is the same as currentUser or a different GitHub account
+          const githubUserId = result.user.githubId;
+          
+          // Add GitHub to current user's available methods if not already there
+          if (!currentUser.availableAuthMethods.includes(AuthMethodType.GITHUB)) {
+            currentUser.availableAuthMethods.push(AuthMethodType.GITHUB);
+            currentUser.githubId = githubUserId;
+            currentUser.githubUsername = result.user.githubUsername;
+            currentUser.githubVerified = true;
+            if (result.user.avatarUrl && !currentUser.avatarUrl) {
+              currentUser.avatarUrl = result.user.avatarUrl;
+            }
+            await this.multiAuthService['usersRepo'].save(currentUser);
+            this.logger.log(`GitHub (${githubUserId}) added to user ${userId} available methods`);
+          } else {
+            this.logger.log(`GitHub already connected to user ${userId}`);
+          }
+          
+          // Generate tokens for the CURRENT user (not the GitHub user)
+          const accessToken = await this.authService.generateAccessToken(currentUser);
+          const refreshToken = await this.authService.generateRefreshToken(currentUser);
+          
+          this.logger.log(`Tokens generated for current user ${userId}`);
+          
+          // Redirect to dashboard with tokens
           const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
-          const redirectUrl = `${frontendUrl}/dashboard.html`;
+          const redirectUrl = `${frontendUrl}/dashboard.html?token=${accessToken}&refreshToken=${refreshToken}`;
           this.logger.log(`GitHub OAuth binding redirecting to: ${redirectUrl}`);
           return res.redirect(redirectUrl);
         }
