@@ -552,36 +552,34 @@ export class MultiAuthController {
       
       this.logger.log(`Current user: ${currentUser.email}, available methods: ${JSON.stringify(currentUser.availableAuthMethods)}`);
       
-      // Check if Telegram is already connected
-      if (!currentUser.availableAuthMethods.includes(AuthMethodType.PHONE_TELEGRAM)) {
-        currentUser.availableAuthMethods.push(AuthMethodType.PHONE_TELEGRAM);
-        // Extract telegram user ID from telegramUser object
-        const telegramId = id?.toString();
-        if (telegramId) {
-          // Store telegram metadata
-          if (!currentUser.messengerMetadata) {
-            currentUser.messengerMetadata = {} as any;
-          }
-          if (!currentUser.messengerMetadata.telegram) {
-            currentUser.messengerMetadata.telegram = { userId: telegramId, username: username || '' } as any;
-          } else {
-            if (currentUser.messengerMetadata.telegram) {
-              currentUser.messengerMetadata.telegram.userId = telegramId;
-              if (currentUser.messengerMetadata.telegram.username !== undefined) {
-                (currentUser.messengerMetadata.telegram as any).username = username || '';
+          // Check if Telegram is already connected
+          if (!currentUser.availableAuthMethods.includes(AuthMethodType.PHONE_TELEGRAM)) {
+            currentUser.availableAuthMethods.push(AuthMethodType.PHONE_TELEGRAM);
+            // Extract telegram user ID from telegramUser object
+            const telegramId = id?.toString();
+            if (telegramId) {
+              // Store telegram metadata
+              if (!currentUser.messengerMetadata) {
+                currentUser.messengerMetadata = {} as any;
               }
+              const metadata = currentUser.messengerMetadata as any;
+              
+              if (!metadata.telegram) {
+                metadata.telegram = { userId: telegramId, username: username || '' };
+              } else {
+                metadata.telegram.userId = telegramId;
+                metadata.telegram.username = username || '';
+              }
+              currentUser.phoneVerified = true;
             }
+            if (photo_url && !currentUser.avatarUrl) {
+              currentUser.avatarUrl = photo_url;
+            }
+            await this.multiAuthService['usersRepo'].save(currentUser);
+            this.logger.log(`Telegram added to user ${userId} available methods`);
+          } else {
+            this.logger.log(`Telegram already connected to user ${userId}`);
           }
-          currentUser.phoneVerified = true;
-        }
-        if (photo_url && !currentUser.avatarUrl) {
-          currentUser.avatarUrl = photo_url;
-        }
-        await this.multiAuthService['usersRepo'].save(currentUser);
-        this.logger.log(`Telegram added to user ${userId} available methods`);
-      } else {
-        this.logger.log(`Telegram already connected to user ${userId}`);
-      }
       
       // Generate tokens for CURRENT user
       const tokens = await this.generateTokens(currentUser);
