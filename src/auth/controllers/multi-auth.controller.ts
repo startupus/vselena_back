@@ -550,10 +550,11 @@ export class MultiAuthController {
             currentUser.messengerMetadata = {};
           }
           if (!currentUser.messengerMetadata.telegram) {
-            currentUser.messengerMetadata.telegram = {};
+            currentUser.messengerMetadata.telegram = { userId: telegramId, username: username || '' };
+          } else {
+            currentUser.messengerMetadata.telegram.userId = telegramId;
+            currentUser.messengerMetadata.telegram.username = username || '';
           }
-          currentUser.messengerMetadata.telegram.userId = telegramId;
-          currentUser.messengerMetadata.telegram.username = username || '';
           currentUser.phoneVerified = true;
         }
         if (photo_url && !currentUser.avatarUrl) {
