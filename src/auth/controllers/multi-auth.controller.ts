@@ -119,6 +119,18 @@ export class MultiAuthController {
     
     // If this is EMAIL binding and password is provided, we need to hash and set it
     if (authMethod === AuthMethodType.EMAIL && password) {
+      // Check if email is already in use by another user
+      const existingUser = await this.multiAuthService['usersRepo'].findOne({ 
+        where: { email: identifier } 
+      });
+      
+      if (existingUser && existingUser.id !== userId) {
+        return {
+          success: false,
+          error: 'Этот email уже используется другим аккаунтом. Для привязки email к существующему аккаунту необходимо знать пароль от этого аккаунта.'
+        };
+      }
+      
       const bcrypt = require('bcrypt');
       const salt = await bcrypt.genSalt(12);
       const passwordHash = await bcrypt.hash(password, salt);
