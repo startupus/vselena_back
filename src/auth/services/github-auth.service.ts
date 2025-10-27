@@ -3,6 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Role } from '../../rbac/entities/role.entity';
+import { UserRoleAssignment } from '../../users/entities/user-role-assignment.entity';
+import { SettingsService } from '../../settings/settings.service';
 import { AuthMethodType } from '../enums/auth-method-type.enum';
 import { OAuthCallbackResult, OAuthMetadata } from '../interfaces/multi-auth.interface';
 
@@ -15,8 +18,13 @@ export class GitHubAuthService {
 
   constructor(
     private configService: ConfigService,
+    private settingsService: SettingsService,
     @InjectRepository(User)
     private usersRepo: Repository<User>,
+    @InjectRepository(Role)
+    private rolesRepo: Repository<Role>,
+    @InjectRepository(UserRoleAssignment)
+    private userRoleAssignmentRepo: Repository<UserRoleAssignment>,
   ) {
     this.clientId = this.configService.get<string>('GITHUB_CLIENT_ID') || '';
     this.clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET') || '';
@@ -126,6 +134,9 @@ export class GitHubAuthService {
       this.logger.log(`Creating new GitHub user for email: ${primaryEmail}`);
       const newUser = await this.createUserFromGitHub(userData, emailData, metadata);
       this.logger.log(`New GitHub user created: ${newUser.id}`);
+      
+      // Назначаем роль новому пользователю
+      await this.assignDefaultRoleToUser(newUser.id);
       
       return {
         success: true,
@@ -289,6 +300,43 @@ export class GitHubAuthService {
     const savedUser = await this.usersRepo.save(newUser);
     this.logger.log(`Создан новый пользователь через GitHub: ${savedUser?.email || 'unknown'}`);
     return savedUser;
+  }
+
+  private async assignDefaultRoleToUser(userId: string): Promise<void> {
+    try {
+      // Проверяем, есть ли уже пользователи в системе
+      const userCount = await this.usersRepo.count();
+      const isFirstUser = userCount === 1; // Только что создали пользователя, поэтому count = 1
+      
+      let roleToAssign;
+      
+      if (isFirstUser) {
+        // Первый пользователь становится super_admin
+        roleToAssign = await this.rolesRepo.findOne({
+          where: { name: 'super_admin' }
+        });
+        this.logger.log('👑 Первый пользователь получает роль super_admin');
+      } else {
+        // Остальные пользователи получают роль из настроек системы
+        const defaultRoleName = await this.settingsService.getDefaultUserRole();
+        roleToAssign = await this.rolesRepo.findOne({
+          where: { name: defaultRoleName }
+        });
+        this.logger.log(`👤 Новому пользователю назначена роль "${defaultRoleName}" (из настроек)`);
+      }
+      
+      if (roleToAssign) {
+        await this.userRoleAssignmentRepo.save({
+          userId: userId,
+          roleId: roleToAssign.id,
+        });
+        this.logger.log(`✅ Пользователю назначена роль "${roleToAssign.name}"`);
+      } else {
+        this.logger.log('⚠️ Роль не найдена');
+      }
+    } catch (error) {
+      this.logger.error(`Ошибка назначения роли: ${error.message}`);
+    }
   }
 
   private async detectConflicts(
