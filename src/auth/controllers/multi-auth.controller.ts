@@ -517,13 +517,65 @@ export class MultiAuthController {
   @Post('telegram-login')
   @Public()
   @ApiOperation({ summary: 'Обработка Telegram Login Widget' })
-  async handleTelegramLogin(@Body() telegramUser: any) {
+  async handleTelegramLogin(@Body() body: { telegramUser: any; bind?: boolean; userId?: string }) {
+    const { telegramUser, bind, userId } = body;
     const { id, first_name, last_name, username, photo_url, auth_date, hash } = telegramUser;
     
-    this.logger.log(`Telegram Login: ${username || first_name} (${id})`);
+    this.logger.log(`Telegram Login: ${username || first_name} (${id}), bind=${bind}, userId=${userId}`);
     
     // Проверяем hash для безопасности
     // TODO: Добавить проверку hash
+    
+    if (bind && userId) {
+      // This is a binding request - add Telegram to existing user
+      this.logger.log(`Telegram binding request for user ${userId}`);
+      
+      const currentUser = await this.multiAuthService['usersRepo'].findOne({ where: { id: userId } });
+      
+      if (!currentUser) {
+        this.logger.error(`Current user ${userId} not found`);
+        throw new Error('User not found');
+      }
+      
+      this.logger.log(`Current user: ${currentUser.email}, available methods: ${JSON.stringify(currentUser.availableAuthMethods)}`);
+      
+      // Check if Telegram is already connected
+      if (!currentUser.availableAuthMethods.includes(AuthMethodType.PHONE_TELEGRAM)) {
+        currentUser.availableAuthMethods.push(AuthMethodType.PHONE_TELEGRAM);
+        // Extract telegram user ID from telegramUser object
+        const telegramId = id?.toString();
+        if (telegramId) {
+          // Store telegram metadata
+          if (!currentUser.messengerMetadata) {
+            currentUser.messengerMetadata = {};
+          }
+          if (!currentUser.messengerMetadata.telegram) {
+            currentUser.messengerMetadata.telegram = {};
+          }
+          currentUser.messengerMetadata.telegram.userId = telegramId;
+          currentUser.messengerMetadata.telegram.username = username || '';
+          currentUser.phoneVerified = true;
+        }
+        if (photo_url && !currentUser.avatarUrl) {
+          currentUser.avatarUrl = photo_url;
+        }
+        await this.multiAuthService['usersRepo'].save(currentUser);
+        this.logger.log(`Telegram added to user ${userId} available methods`);
+      } else {
+        this.logger.log(`Telegram already connected to user ${userId}`);
+      }
+      
+      // Generate tokens for CURRENT user
+      const tokens = await this.generateTokens(currentUser);
+      
+      this.logger.log(`Tokens generated for current user ${userId}`);
+      
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: currentUser,
+      };
+    }
     
     // Находим или создаём пользователя
     const user = await this.multiAuthService.handleTelegramLogin(telegramUser);
