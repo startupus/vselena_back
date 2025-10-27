@@ -110,11 +110,36 @@ export class MultiAuthController {
     @Body() body: {
       authMethod: AuthMethodType;
       identifier: string;
+      password?: string;
       verificationCode?: string;
     },
   ) {
     const userId = (req as any).user.userId;
-    const { authMethod, identifier, verificationCode } = body;
+    const { authMethod, identifier, password, verificationCode } = body;
+    
+    // If this is EMAIL binding and password is provided, we need to hash and set it
+    if (authMethod === AuthMethodType.EMAIL && password) {
+      const bcrypt = require('bcrypt');
+      const salt = await bcrypt.genSalt(12);
+      const passwordHash = await bcrypt.hash(password, salt);
+      
+      // Update user's email and passwordHash
+      const user = await this.multiAuthService['usersRepo'].findOne({ where: { id: userId } });
+      if (user) {
+        user.email = identifier;
+        user.passwordHash = passwordHash;
+        user.emailVerified = true;
+        
+        // Add EMAIL to available methods if not already there
+        if (!user.availableAuthMethods.includes(AuthMethodType.EMAIL)) {
+          user.availableAuthMethods.push(AuthMethodType.EMAIL);
+        }
+        
+        await this.multiAuthService['usersRepo'].save(user);
+        
+        return { success: true, user };
+      }
+    }
     
     return this.multiAuthService.bindAuthMethod(userId, authMethod, identifier, verificationCode);
   }
