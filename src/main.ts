@@ -30,7 +30,9 @@ async function bootstrap() {
         'http://45.144.176.42:3000',
         'http://45.144.176.42:3002',
         'https://loginus.ldmco.ru',
-        'http://loginus.ldmco.ru'
+        'http://loginus.ldmco.ru',
+        'https://vselena.ldmco.ru',
+        'http://vselena.ldmco.ru'
       ];
       
       if (allowedOrigins.includes(origin)) {
