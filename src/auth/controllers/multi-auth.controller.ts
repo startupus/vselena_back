@@ -530,6 +530,9 @@ export class MultiAuthController {
   @Public()
   @ApiOperation({ summary: 'Обработка Telegram Login Widget' })
   async handleTelegramLogin(@Body() body: { telegramUser?: any; bind?: boolean; userId?: string } | any) {
+    this.logger.log(`Telegram Login request received. Body keys: ${Object.keys(body).join(', ')}`);
+    this.logger.log(`Telegram Login body (first 300 chars): ${JSON.stringify(body).substring(0, 300)}`);
+    
     const telegramUser = body.telegramUser || body;
     const { bind, userId } = body;
     const { id, first_name, last_name, username, photo_url, auth_date, hash } = telegramUser;
