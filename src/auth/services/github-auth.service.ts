@@ -248,7 +248,7 @@ export class GitHubAuthService {
     // Здесь должна быть логика создания нового пользователя в БД
     const primaryEmail = emailData.find(email => email.primary)?.email;
     
-    const newUser = this.usersRepo.create({
+    const userDataToCreate = {
       email: primaryEmail,
       passwordHash: null, // OAuth users don't have a password
       firstName: userData.name?.split(' ')[0] || userData.login,
@@ -262,11 +262,12 @@ export class GitHubAuthService {
       oauthMetadata: metadata,
       isActive: true,
       emailVerified: true,
-    });
+    };
 
+    const newUser = this.usersRepo.create(userDataToCreate);
     const savedUser = await this.usersRepo.save(newUser);
     this.logger.log(`Создан новый пользователь через GitHub: ${savedUser?.email || 'unknown'}`);
-    return savedUser;
+    return savedUser as User;
   }
 
   private async detectConflicts(
