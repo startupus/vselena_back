@@ -72,29 +72,34 @@ export class GitHubAuthService {
 
       // Проверяем, есть ли пользователь с таким GitHub ID
       const existingUser = await this.findUserByGitHubId(userData.id.toString());
+      this.logger.log(`GitHub user lookup by githubId=${userData.id.toString()}: ${existingUser ? 'found' : 'not found'}`);
       
       if (existingUser) {
         // Обновляем метаданные существующего пользователя
         await this.updateUserOAuthMetadata(existingUser.id, metadata);
-        
+        this.logger.log(`Returning existing GitHub user: ${existingUser.email}`);
         return {
           success: true,
           user: existingUser,
-          // Здесь должны быть сгенерированы accessToken и refreshToken
         };
       }
 
       // Проверяем, есть ли пользователь с таким email
       const primaryEmail = emailData.find(email => email.primary)?.email;
+      this.logger.log(`Checking for user with email: ${primaryEmail}`);
+      
       if (primaryEmail) {
         const userByEmail = await this.findUserByEmail(primaryEmail);
+        this.logger.log(`Email lookup result: ${userByEmail ? 'found' : 'not found'}`);
         
         if (userByEmail) {
           // Нужно слияние аккаунтов
           const conflicts = await this.detectConflicts(userByEmail, userData, emailData);
+          this.logger.log(`Account merge required for email: ${primaryEmail}`);
           
           return {
             success: false,
+            error: 'Account merge required',
             requiresMerge: true,
             conflicts,
           };
@@ -102,12 +107,13 @@ export class GitHubAuthService {
       }
 
       // Создаем нового пользователя
+      this.logger.log(`Creating new GitHub user for email: ${primaryEmail}`);
       const newUser = await this.createUserFromGitHub(userData, emailData, metadata);
+      this.logger.log(`New GitHub user created: ${newUser.id}`);
       
       return {
         success: true,
         user: newUser,
-        // Здесь должны быть сгенерированы accessToken и refreshToken
       };
 
     } catch (error) {
