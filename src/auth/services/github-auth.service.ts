@@ -223,16 +223,16 @@ export class GitHubAuthService {
     return response.json();
   }
 
-  private async findUserByGitHubId(githubId: string): Promise<any> {
-    // Здесь должна быть логика поиска пользователя в БД по GitHub ID
-    // Пока возвращаем null
-    return null;
+  private async findUserByGitHubId(githubId: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: { githubId },
+    });
   }
 
-  private async findUserByEmail(email: string): Promise<any> {
-    // Здесь должна быть логика поиска пользователя в БД по email
-    // Пока возвращаем null
-    return null;
+  private async findUserByEmail(email: string): Promise<User | null> {
+    return this.usersRepo.findOne({
+      where: { email },
+    });
   }
 
   private async updateUserOAuthMetadata(userId: string, metadata: OAuthMetadata): Promise<void> {
