@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -6,6 +6,7 @@ import { VerificationCode } from '../entities/verification-code.entity';
 import { AccountMergeRequest } from '../entities/account-merge-request.entity';
 import { AuthMethodType } from '../enums/auth-method-type.enum';
 import { UsersService } from '../../users/users.service';
+import { AuthService } from '../auth.service';
 import {
   AuthResult,
   VerificationCodeData,
@@ -26,6 +27,8 @@ export class MultiAuthService {
     @InjectRepository(AccountMergeRequest)
     private mergeRequestsRepo: Repository<AccountMergeRequest>,
     private usersService: UsersService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
   ) {}
 
   /**
@@ -670,15 +673,15 @@ export class MultiAuthService {
    * Генерация Access Token
    */
   async generateAccessToken(user: any): Promise<string> {
-    // TODO: Реализовать генерацию токена
-    return 'temp-token';
+    // Используем AuthService для генерации токена
+    return this.authService.generateAccessToken(user);
   }
 
   /**
    * Генерация Refresh Token
    */
   async generateRefreshToken(user: any): Promise<string> {
-    // TODO: Реализовать генерацию refresh токена
-    return 'temp-refresh-token';
+    // Используем AuthService для генерации refresh токена
+    return this.authService.generateRefreshToken(user);
   }
 }

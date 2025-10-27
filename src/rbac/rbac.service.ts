@@ -270,18 +270,32 @@ export class RbacService {
 
   /**
    * Получение всех доступных ролей (системные и кастомные)
-   * Только глобальные роли: super_admin, admin, viewer
+   * Возвращает все глобальные роли с полными данными и permissions
    */
   async getAllRoles(): Promise<Role[]> {
     const roles = await this.rolesRepo.find({
       where: {
         isGlobal: true,
-        name: In(['super_admin', 'admin', 'viewer']),
       },
       relations: ['permissions'],
       order: { name: 'ASC' },
     });
     return roles;
+  }
+
+  /**
+   * Получение ролей доступных для назначения пользователям
+   * Только 3 роли: super_admin, admin, viewer
+   */
+  async getAssignableRoles(): Promise<Partial<Role>[]> {
+    return this.rolesRepo.find({
+      where: {
+        isGlobal: true,
+        name: In(['super_admin', 'admin', 'viewer']),
+      },
+      select: ['id', 'name', 'description', 'isGlobal'],
+      order: { name: 'ASC' },
+    });
   }
 
   /**

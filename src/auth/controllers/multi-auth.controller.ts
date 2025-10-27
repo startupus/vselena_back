@@ -6,6 +6,7 @@ import { PhoneAuthService } from '../services/phone-auth.service';
 import { GitHubAuthService } from '../services/github-auth.service';
 import { VKontakteAuthService } from '../services/vkontakte-auth.service';
 import { GosuslugiAuthService } from '../services/gosuslugi-auth.service';
+import { AuthService } from '../auth.service';
 import { AuthMethodType } from '../enums/auth-method-type.enum';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Public } from '../decorators/public.decorator';
@@ -21,6 +22,7 @@ export class MultiAuthController {
     private githubAuthService: GitHubAuthService,
     private vkontakteAuthService: VKontakteAuthService,
     private gosuslugiAuthService: GosuslugiAuthService,
+    private authService: AuthService,
   ) {}
 
   /**
@@ -288,7 +290,7 @@ export class MultiAuthController {
   /**
    * Получение URL для авторизации через GitHub
    */
-  @Get('oauth/github')
+  @Get('oauth/github/url')
   @Public()
   @ApiOperation({ summary: 'Получение URL для авторизации через GitHub' })
   @ApiQuery({ name: 'state', required: false, description: 'Состояние для защиты от CSRF' })
@@ -297,7 +299,7 @@ export class MultiAuthController {
   async getGitHubAuthUrl(@Query('state') state?: string) {
     try {
       const authUrl = this.githubAuthService.getAuthUrl(state);
-      return { authUrl };
+      return { url: authUrl };
     } catch (error) {
       this.logger.error(`GitHub OAuth error: ${error.message}`);
       return {
@@ -325,14 +327,18 @@ export class MultiAuthController {
       const result = await this.githubAuthService.handleCallback(code, state);
       
       if (result.success) {
-        // Перенаправляем на фронтенд с токенами
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
-        const redirectUrl = `${frontendUrl}/auth/success?token=${result.accessToken}&refreshToken=${result.refreshToken}`;
+        // Генерируем JWT токены для пользователя через AuthService
+        const accessToken = await this.authService.generateAccessToken(result.user);
+        const refreshToken = await this.authService.generateRefreshToken(result.user);
+        
+        // Перенаправляем на dashboard с токенами
+        const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
+        const redirectUrl = `${frontendUrl}/dashboard.html?token=${accessToken}&refreshToken=${refreshToken}`;
         return res.redirect(redirectUrl);
       } else {
-        // Перенаправляем на фронтенд с ошибкой
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
-        const redirectUrl = `${frontendUrl}/auth/error?error=${encodeURIComponent(result.error || 'Unknown error')}`;
+        // Перенаправляем на главную с ошибкой
+        const frontendUrl = process.env.FRONTEND_URL || 'https://vselena.ldmco.ru';
+        const redirectUrl = `${frontendUrl}/index.html?error=${encodeURIComponent(result.error || 'Unknown error')}`;
         return res.redirect(redirectUrl);
       }
     } catch (error) {

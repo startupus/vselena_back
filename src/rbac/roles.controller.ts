@@ -33,6 +33,13 @@ export class RolesController {
     return this.rbacService.getRolesForSettings();
   }
 
+  @Get('assignable')
+  @ApiOperation({ summary: 'Получение ролей доступных для назначения (только super_admin, admin, viewer)' })
+  @ApiResponse({ status: 200, description: 'Список ролей для назначения' })
+  async getAssignableRoles() {
+    return this.rbacService.getAssignableRoles();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Получение роли по ID' })
   @ApiResponse({ status: 200, description: 'Роль найдена' })

@@ -37,7 +37,7 @@ services:
       JWT_REFRESH_SECRET: your-refresh-secret-key-min-32-chars-long-very-secure
       JWT_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d
-      FRONTEND_URL: https://loginus.ldmco.ru
+      FRONTEND_URL: https://vselena.ldmco.ru
       SWAGGER_ENABLED: true
       # Email настройки (Yandex SMTP)
       SMTP_HOST: smtp.yandex.ru
@@ -57,10 +57,10 @@ services:
       TELEGRAM_CHAT_ID: 1063129435
       
       # GitHub OAuth
-      # ВАЖНО: Callback URL в GitHub App должен быть: http://localhost:3001/api/auth/multi/oauth/github/callback
+      # ВАЖНО: Callback URL в GitHub App должен быть: https://vselena.ldmco.ru/api/auth/multi/oauth/github/callback
       GITHUB_CLIENT_ID: Ov23li3523l5PKz1Jblw
       GITHUB_CLIENT_SECRET: 74f40856066f25e6041e45348579e1f6373e82e2
-      GITHUB_REDIRECT_URI: http://localhost:3001/api/auth/multi/oauth/github/callback
+      GITHUB_REDIRECT_URI: https://vselena.ldmco.ru/api/auth/multi/oauth/github/callback
       
       # VKontakte OAuth
       # VK_CLIENT_ID: ваш-vk-app-id
