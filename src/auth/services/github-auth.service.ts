@@ -1,5 +1,8 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 import { AuthMethodType } from '../enums/auth-method-type.enum';
 import { OAuthCallbackResult, OAuthMetadata } from '../interfaces/multi-auth.interface';
 
@@ -10,7 +13,11 @@ export class GitHubAuthService {
   private readonly clientSecret: string;
   private readonly redirectUri: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(User)
+    private usersRepo: Repository<User>,
+  ) {
     this.clientId = this.configService.get<string>('GITHUB_CLIENT_ID') || '';
     this.clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET') || '';
     this.redirectUri = this.configService.get<string>('GITHUB_REDIRECT_URI') || 'http://localhost:3001/api/auth/multi/oauth/github/callback';
@@ -237,11 +244,11 @@ export class GitHubAuthService {
     userData: any,
     emailData: any[],
     metadata: OAuthMetadata,
-  ): Promise<any> {
+  ): Promise<User> {
     // Здесь должна быть логика создания нового пользователя в БД
     const primaryEmail = emailData.find(email => email.primary)?.email;
     
-    const newUser = {
+    const newUser = this.usersRepo.create({
       email: primaryEmail,
       passwordHash: null, // OAuth users don't have a password
       firstName: userData.name?.split(' ')[0] || userData.login,
@@ -250,13 +257,14 @@ export class GitHubAuthService {
       githubId: userData.id.toString(),
       githubUsername: userData.login,
       githubVerified: true,
-      primaryAuthMethod: AuthMethodType.GITHUB.toString(),
-      availableAuthMethods: [AuthMethodType.GITHUB.toString()],
+      primaryAuthMethod: AuthMethodType.GITHUB,
+      availableAuthMethods: [AuthMethodType.GITHUB],
       oauthMetadata: metadata,
-    };
+    });
 
-    this.logger.log(`Создан новый пользователь через GitHub: ${newUser.email}`);
-    return newUser;
+    const savedUser = await this.usersRepo.save(newUser);
+    this.logger.log(`Создан новый пользователь через GitHub: ${savedUser.email}`);
+    return savedUser;
   }
 
   private async detectConflicts(
